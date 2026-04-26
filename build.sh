@@ -6,8 +6,11 @@ set -e
 
 VERSION="3.0.13"
 ARCH="amd64"
-BUILD_DIR="linux-build"
-OUTPUT_DIR="output"
+
+# Use absolute paths for safety
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BUILD_DIR="${SCRIPT_DIR}/linux-build"
+OUTPUT_DIR="${SCRIPT_DIR}/output"
 PACKAGE_NAME="minimax-agent_${VERSION}_${ARCH}.deb"
 
 echo "=========================================="
@@ -20,6 +23,13 @@ if [ "$EUID" -ne 0 ]; then
     echo "Warning: Not running as root. Some operations may fail."
     echo "Consider running with: sudo $0"
     echo ""
+fi
+
+# Safety check: Verify we're in the expected directory
+if [ ! -f "${SCRIPT_DIR}/package.json" ] && [ ! -d "${SCRIPT_DIR}/linux-build" ]; then
+    echo "Error: This script must be run from the project root directory."
+    echo "Expected files: package.json or linux-build directory"
+    exit 1
 fi
 
 # Create output directory
@@ -39,11 +49,34 @@ fi
 
 echo "  All dependencies satisfied."
 
-# Clean previous builds
+# Clean previous builds with safety checks
 echo ""
 echo "[2/4] Cleaning previous builds..."
-rm -f "$OUTPUT_DIR/$PACKAGE_NAME"
-rm -rf "$BUILD_DIR/DEBIAN/*.deb"
+if [ -f "$OUTPUT_DIR/$PACKAGE_NAME" ]; then
+    # Verify OUTPUT_DIR is within SCRIPT_DIR before deletion
+    case "$OUTPUT_DIR" in
+        "${SCRIPT_DIR}"*)
+            rm -f "$OUTPUT_DIR/$PACKAGE_NAME"
+            ;;
+        *)
+            echo "Error: Output directory is outside project directory. Aborting for safety."
+            exit 1
+            ;;
+    esac
+fi
+
+# Clean build artifacts with safety check
+if [ -d "$BUILD_DIR/DEBIAN" ]; then
+    case "$BUILD_DIR" in
+        "${SCRIPT_DIR}"*)
+            rm -f "$BUILD_DIR/DEBIAN"/*.deb 2>/dev/null || true
+            ;;
+        *)
+            echo "Error: Build directory is outside project directory. Aborting for safety."
+            exit 1
+            ;;
+    esac
+fi
 
 # Build the package
 echo ""
