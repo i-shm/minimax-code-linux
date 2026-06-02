@@ -21,8 +21,23 @@ linux-build/*
 !linux-build/usr/
 !linux-build/opt/
 
-# Large app bundle (included inside .deb package)
+# Electron runtime binaries (included inside .deb package)
 linux-build/opt/minimax-agent/resources/app.asar
+linux-build/opt/minimax-agent/electron
+linux-build/opt/minimax-agent/chrome-sandbox
+linux-build/opt/minimax-agent/chrome_crashpad_handler
+linux-build/opt/minimax-agent/resources/default_app.asar
+linux-build/opt/minimax-agent/locales/
+linux-build/opt/minimax-agent/*.pak
+linux-build/opt/minimax-agent/*.so
+linux-build/opt/minimax-agent/*.so.*
+linux-build/opt/minimax-agent/*.bin
+linux-build/opt/minimax-agent/*.dat
+linux-build/opt/minimax-agent/swiftshader/
+linux-build/opt/minimax-agent/LICENSES.chromium.html
+linux-build/opt/minimax-agent/LICENSE
+linux-build/opt/minimax-agent/version
+linux-build/opt/minimax-agent/vk_swiftshader_icd.json
 
 # Downloaded installers
 *.exe
