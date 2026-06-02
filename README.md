@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-Linux-blue" alt="Platform">
   <img src="https://img.shields.io/badge/Architecture-amd64-orange" alt="Architecture">
-  <img src="https://img.shields.io/badge/Version-3.0.13-green" alt="Version">
+  <img src="https://img.shields.io/badge/Version-3.0.35-green" alt="Version">
   <img src="https://img.shields.io/badge/Package-deb-red" alt="Package">
 </p>
 
@@ -13,20 +13,23 @@
 
 **Direct Download:** Click on the `.deb` file in the `releases/` folder above, or use:
 ```bash
-wget https://github.com/unn-Known1/minimax-agent-linux/raw/main/releases/minimax-agent_3.0.13_amd64.deb
+wget https://github.com/unn-Known1/minimax-agent-linux/raw/main/releases/minimax-agent_3.0.35_amd64.deb
 ```
 
 ## Installation
 
 ```bash
 # Download the package
-wget https://github.com/unn-Known1/minimax-agent-linux/raw/main/releases/minimax-agent_3.0.13_amd64.deb
+wget https://github.com/unn-Known1/minimax-agent-linux/raw/main/releases/minimax-agent_3.0.35_amd64.deb
 
 # Install
-sudo dpkg -i minimax-agent_3.0.13_amd64.deb
+sudo dpkg -i minimax-agent_3.0.35_amd64.deb
 
 # Fix dependencies if needed
 sudo apt --fix-broken install
+
+# Run setup to download Electron runtime
+sudo ./setup.sh
 
 # Launch
 minimax-agent
@@ -39,6 +42,8 @@ minimax-agent
 - Custom protocol handler (`minimax://`) for OAuth callbacks
 - Desktop integration with app icons
 - System tray support
+- Daemon process for background tasks
+- Skills and agents system
 - All features from the Windows version
 
 ## Supported Distributions
@@ -53,7 +58,7 @@ minimax-agent
 ### Minimum Requirements
 - 64-bit (amd64) Linux distribution
 - 2 GB RAM
-- 500 MB free disk space
+- 1 GB free disk space
 - libgtk-3-0 and associated libraries
 
 ### Dependencies
@@ -104,4 +109,4 @@ This is an unofficial port. MiniMax is not affiliated with this project. The ori
 
 ---
 
-*Last updated: April 2026*
+*Last updated: June 2026*

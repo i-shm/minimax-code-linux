@@ -8,40 +8,38 @@ Before installing, ensure you have the required dependencies:
 
 ```bash
 sudo apt update
-sudo apt install wget curl unzip libgtk-3-0 libnss3 libasound2 libxss1 libgbm1
+sudo apt install wget curl unzip libgtk-3-0 libnss3 libasound2 libxss1 libgbm1 nodejs npm
 ```
 
 ## Full Installation Steps
 
-### Step 1: Download the Package
-
-Download the latest `.deb` package from the [Releases](https://github.com/unn-Known1/minimax-agent-linux/releases) page.
-
-### Step 2: Download Binary Assets
-
-Due to GitHub's file size limits, the binary files (Electron runtime) are hosted separately.
-
-Download the binary package:
-```bash
-wget https://github.com/unn-Known1/minimax-agent-linux/releases/download/v3.0.13/electron-runtime.tar.gz
-```
-
-Extract to `/opt/`:
-```bash
-sudo tar -xzf electron-runtime.tar.gz -C /opt/
-```
-
-### Step 3: Install the .deb Package
+### Step 1: Install the .deb Package
 
 ```bash
-sudo dpkg -i minimax-agent_3.0.13_amd64.deb
-```
-
-### Step 4: Fix Dependencies (if needed)
-
-If you see dependency errors:
-```bash
+sudo dpkg -i minimax-agent_3.0.35_amd64.deb
 sudo apt --fix-broken install
+```
+
+### Step 2: Download and Setup Electron Runtime
+
+```bash
+sudo ./setup.sh
+```
+
+### Step 3: Install Daemon Dependencies
+
+If setup.sh didn't run npm install automatically:
+
+```bash
+cd /opt/minimax-agent/resources/resources/daemon
+sudo npm install --omit=dev
+```
+
+### Step 4: (Optional) Install OpenCode
+
+Place the Linux `opencode` binary at:
+```
+/opt/minimax-agent/resources/resources/opencode/opencode
 ```
 
 ### Step 5: Launch
@@ -49,13 +47,13 @@ sudo apt --fix-broken install
 You can launch MiniMax Agent from:
 - Application menu
 - Terminal: `minimax-agent`
-- Or by clicking the desktop icon (if created)
 
 ## File Locations
 
 After installation:
 - Application binary: `/opt/minimax-agent/electron`
-- Resources: `/opt/minimax-agent/resources/`
+- App code: `/opt/minimax-agent/resources/app.asar`
+- Daemon: `/opt/minimax-agent/resources/resources/daemon/`
 - Desktop file: `/usr/share/applications/minimax-agent.desktop`
 - Launcher: `/usr/bin/minimax-agent`
 
@@ -75,7 +73,7 @@ Check if Electron is present:
 ls -la /opt/minimax-agent/electron
 ```
 
-If missing, re-run the binary download step.
+If missing, re-run setup.sh.
 
 ### Google login fails
 

@@ -16,10 +16,13 @@ Thumbs.db
 *.swo
 
 # Package-specific
-linux-build/
+linux-build/*
 !linux-build/DEBIAN/
 !linux-build/usr/
 !linux-build/opt/
+
+# Large app bundle (included inside .deb package)
+linux-build/opt/minimax-agent/resources/app.asar
 
 # Downloaded installers
 *.exe

@@ -4,7 +4,7 @@
 
 set -e
 
-VERSION="3.0.13"
+VERSION="3.0.35"
 ARCH="amd64"
 
 # Use absolute paths for safety

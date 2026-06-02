@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Mavis Browser Bridge",
+  "short_name": "Mavis Browser",
+  "version": "0.0.1",
+  "description": "Browser automation bridge for Mavis — multi-profile native messaging",
+  "homepage_url": "https://gitlab.xaminim.com/matrix/agent-archon",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5bmmjEni0hEVY0DdIKu8YxqzSf990evJtxCrN/cplG25uBgIXXSLEsf2dT1ZB/kJgU3xrYodZx2AAxF5g9+ebQmZtSCb31gupeILSQaBoCbPxJHx2zK56d9LW9M66PXTMUxi81MTxyWtnGRl1If+IoYVbQScCnFMKXBIAmwzUKetvTfgwHvbE9s50pWqDB2gRPsPYIA5PSsbneO13Q/L7V8kPuouPIpZgh2G1aMJcC0OqpC7b3vpl1x7wCNSSp0wrBV6rxG9wuLClG3xFkKZmLNDIow3RA45WTf6Q1IfSGQV07RXmnr3zX9MM+GffsNMis5HT8jgrtziPSR2fGR7lQIDAQAB",
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "scripting",
+    "storage",
+    "notifications",
+    "alarms",
+    "nativeMessaging",
+    "downloads",
+    "debugger",
+    "webRequest"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Mavis Browser Bridge",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

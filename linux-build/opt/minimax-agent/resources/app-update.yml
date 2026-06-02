@@ -1,0 +1,3 @@
+provider: generic
+url: https://file.cdn.minimax.io/public/minimax-agent/release
+updaterCacheDirName: '@mmx-agentelectron-updater'

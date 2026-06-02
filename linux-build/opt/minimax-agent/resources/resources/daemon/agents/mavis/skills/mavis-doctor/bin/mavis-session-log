@@ -1,0 +1,291 @@
+#!/usr/bin/env bash
+# mavis-session-log — Slice a Mavis LLM session's local-proxy log into a
+# directory of categorized views. The script is a bakery: one session id in,
+# one self-describing artifact directory out.
+#
+# Usage:
+#   mavis-session-log [--data-dir <dir>] [--log-dir <dir>] [-o <out-dir>] <ses_id_or_mvs_id>
+#
+# Options:
+#   --data-dir <dir>   Mavis data directory containing sqlite.db and logs/.
+#   --log-dir <dir>    Override the local-proxy log directory.
+#   -o <out-dir>       Output artifact directory.
+
+set -euo pipefail
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "mavis-session-log: 'jq' is required but not installed." >&2
+  echo "  install with: brew install jq   (macOS)" >&2
+  echo "             or: apt-get install jq   (Debian/Ubuntu)" >&2
+  exit 127
+fi
+
+usage() {
+  sed -n '2,/^set -euo pipefail/p' "$0" | sed 's/^# \{0,1\}//;/^set -euo pipefail$/d'
+  exit "${1:-2}"
+}
+
+[[ $# -eq 0 || "${1:-}" == "-h" || "${1:-}" == "--help" ]] && usage 0
+
+sid=""
+out_dir=""
+data_dir="${__MAVIS_PARENT_DATA_DIR:-$HOME/.mavis}"
+log_dir=""
+
+while (( $# )); do
+  case "$1" in
+    --data-dir)
+      data_dir="$2"
+      shift 2
+      ;;
+    --log-dir)
+      log_dir="$2"
+      shift 2
+      ;;
+    -o)
+      out_dir="$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage 0
+      ;;
+    *)
+      if [[ -z "$sid" ]]; then
+        sid="$1"
+        shift
+      else
+        echo "mavis-session-log: unknown arg: $1" >&2
+        usage 2
+      fi
+      ;;
+  esac
+done
+
+[[ -z "$sid" ]] && usage 2
+
+original_sid="$sid"
+
+if [[ "$sid" =~ ^mvs_[A-Za-z0-9]+$ ]]; then
+  # Resolve mvs_ (daemon session ID) to ses_ (framework session ID) via SQLite
+  MAVIS_DB="$data_dir/sqlite.db"
+  if [[ ! -f "$MAVIS_DB" ]]; then
+    echo "mavis-session-log: cannot resolve mvs_ id — DB not found at $MAVIS_DB" >&2
+    exit 1
+  fi
+  resolved=$(sqlite3 "$MAVIS_DB" "SELECT framework_session_id FROM sessions WHERE session_id = '$sid'" 2>/dev/null)
+  if [[ -z "$resolved" || "$resolved" == "null" ]]; then
+    echo "mavis-session-log: no framework_session_id found for '$sid' (session may be lazy/un-provisioned)" >&2
+    exit 1
+  fi
+  echo "mavis-session-log: resolved $sid -> $resolved" >&2
+  sid="$resolved"
+elif [[ ! "$sid" =~ ^ses_[A-Za-z0-9]+$ ]]; then
+  echo "mavis-session-log: '$sid' is not a valid session id (expected 'ses_[A-Za-z0-9]+' or 'mvs_[A-Za-z0-9]+')" >&2
+  exit 2
+fi
+
+LOG_DIR="${log_dir:-$data_dir/logs}"
+
+shopt -s nullglob
+proxy_files=("$LOG_DIR"/local-proxy-*.jsonl)
+shopt -u nullglob
+
+if [[ ${#proxy_files[@]} -eq 0 ]]; then
+  echo "mavis-session-log: no local-proxy logs found in $LOG_DIR" >&2
+  echo "  (was the daemon started with LOCAL_PROXY=1?)" >&2
+  exit 1
+fi
+
+entries=$(jq -c --arg sid "$sid" \
+  'select(.headers["x-mavis-session-id"] == $sid)' \
+  "${proxy_files[@]}" \
+  | jq -s 'sort_by(.ts) | .[]' -c)
+
+if [[ -z "$entries" ]]; then
+  echo "mavis-session-log: no entries for session $sid in $LOG_DIR" >&2
+  echo "  (the session may predate retention, or LOCAL_PROXY=1 was not set)" >&2
+  exit 1
+fi
+
+if [[ -z "$out_dir" ]]; then
+  out_dir="${TMPDIR:-/tmp}/mavis-session-log/${sid}"
+fi
+mkdir -p "$out_dir"
+
+printf '%s\n' "$entries" > "$out_dir/raw.jsonl"
+
+printf '%s\n' "$entries" \
+  | jq -c '{
+      ts,
+      status,
+      model: .reqBody.model,
+      durationMs,
+      sseChunks,
+      msgCount: (.reqBody.messages | length),
+      toolCount: (.reqBody.tools | length // 0),
+      url
+    }' \
+  > "$out_dir/summary.jsonl"
+
+jq -r '
+  "\(.ts | sub("T"; " ") | sub("\\..*"; ""))  " +
+  "[\(.status)]" +
+  "  " +
+  "\(.reqBody.model // "?")" +
+  "  " +
+  "msg=\(.reqBody.messages | length)" +
+  "  " +
+  "dur=\(.durationMs // 0)ms" +
+  (if .sseChunks then "  chunks=\(.sseChunks)" else "" end)
+' "$out_dir/raw.jsonl" > "$out_dir/timeline.txt"
+
+jq -c 'select(.status >= 400)' "$out_dir/raw.jsonl" > "$out_dir/errors.jsonl"
+
+jq -r '.reqBody.system // "" | if type == "string" then . else (map(.text // (.|tostring)) | join("\n")) end' \
+  <(tail -n 1 "$out_dir/raw.jsonl") > "$out_dir/system.txt"
+
+jq '.reqBody.tools // []' <(tail -n 1 "$out_dir/raw.jsonl") > "$out_dir/tools.json"
+
+render_conv() {
+  local input_line="$1"
+  local out_file="$2"
+  jq -r '
+    .reqBody.messages | map(
+      .role as $role
+      | (if (.content | type) == "string" then [{type:"text", text:.content}] else .content end)
+      | map(
+          if .type == "text" then "════ \($role | ascii_upcase) ════\n\(.text)"
+          elif .type == "thinking" then "════ \($role | ascii_upcase) [THINKING] ════\n\(.thinking // .text // "")"
+          elif .type == "tool_use" then "════ \($role | ascii_upcase) [TOOL_USE: \(.name)] ════\nid: \(.id)\ninput: \(.input | tostring)"
+          elif .type == "tool_result" then "════ \($role | ascii_upcase) [TOOL_RESULT \(.tool_use_id // "")] ════\n" +
+            ( .content | if type=="string" then . else (map(.text // (.|tostring)) | join("\n")) end )
+          else "════ \($role | ascii_upcase) [\(.type)] ════"
+          end
+        )
+    ) | flatten | join("\n\n")
+  ' <(printf '%s\n' "$input_line") > "$out_file"
+}
+
+LAST_LINE=$(tail -n 1 "$out_dir/raw.jsonl")
+FIRST_LINE=$(head -n 1 "$out_dir/raw.jsonl")
+render_conv "$LAST_LINE" "$out_dir/conversation.txt"
+render_conv "$FIRST_LINE" "$out_dir/conversation.first.txt"
+
+slice_text_log() {
+  local prefix="$1"
+  local out="$out_dir/${prefix}.log"
+  : > "$out"
+  shopt -s nullglob
+  for f in "$LOG_DIR"/${prefix}-*.log; do
+    local base
+    base=$(basename "$f")
+    if grep -q -F -- "$sid" "$f" 2>/dev/null; then
+      printf '=== %s ===\n' "$base" >> "$out"
+      grep -F -- "$sid" "$f" >> "$out"
+      printf '\n' >> "$out"
+    fi
+  done
+  shopt -u nullglob
+}
+
+slice_text_log daemon
+slice_text_log plugin
+slice_text_log opencode
+
+total=$(wc -l < "$out_dir/raw.jsonl" | tr -d ' ')
+errors=$(wc -l < "$out_dir/errors.jsonl" | tr -d ' ')
+first_ts=$(jq -r '.ts' <(head -n 1 "$out_dir/raw.jsonl"))
+last_ts=$(jq -r '.ts' "$out_dir/raw.jsonl" | tail -n 1)
+last_msgcount=$(jq '.reqBody.messages | length' <(tail -n 1 "$out_dir/raw.jsonl"))
+last_model=$(jq -r '.reqBody.model // "?"' <(tail -n 1 "$out_dir/raw.jsonl"))
+
+human_size() {
+  awk -v b="$1" 'BEGIN{
+    if (b<1024) printf "%dB", b;
+    else if (b<1048576) printf "%.1fKB", b/1024;
+    else printf "%.1fMB", b/1048576
+  }'
+}
+
+file_row() {
+  local f="$1"
+  local desc="$2"
+  if [[ -f "$out_dir/$f" ]]; then
+    local sz
+    local ln
+    sz=$(wc -c < "$out_dir/$f" | tr -d ' ')
+    ln=$(wc -l < "$out_dir/$f" | tr -d ' ')
+    printf '| `%s` | %s / %s lines | %s |\n' "$f" "$(human_size "$sz")" "$ln" "$desc"
+  fi
+}
+
+id_label="$sid"
+if [[ "$original_sid" != "$sid" ]]; then
+  id_label="$sid (daemon: $original_sid)"
+fi
+
+cat > "$out_dir/README.md" <<EOF
+# Session Log Bakery — \`$id_label\`
+
+**$total** request(s) between **$first_ts** and **$last_ts**.
+Last request: model \`$last_model\`, $last_msgcount cumulative messages.
+Errors: **$errors** request(s) with HTTP status >= 400.
+
+> This directory is the output of \`mavis-session-log $sid\`.
+> Every file is a different angle on the same underlying data
+> (\`raw.jsonl\` is the lossless source of truth). Open any file directly,
+> or grep / head / tail / sed it. **Do not \`cat\` the large ones.**
+
+## Files
+
+| File | Size / Lines | When to open |
+|------|--------------|--------------|
+$(file_row conversation.txt     "**start here** — full message flow of the last request, human-readable")
+$(file_row conversation.first.txt "what the model saw at session birth (the first request)")
+$(file_row daemon.log           "daemon-side events tagged with this session id (recovery / hooks / abort / bridge / permission). Lines are grouped by hourly source file.")
+$(file_row plugin.log           "opencode-plugin events tagged with this session id (token injection, system prompt transform). Same grouping.")
+$(file_row opencode.log         "opencode runtime events tagged with this session id (often empty — opencode rarely tags lines with the session id).")
+$(file_row timeline.txt         "chronological one-line-per-request event outline")
+$(file_row summary.jsonl        "per-request structured summary — pipe through jq for filtering")
+$(file_row errors.jsonl         "only requests with HTTP status >= 400 (limit / auth / upstream)")
+$(file_row system.txt           "system prompt the model received on the last request")
+$(file_row tools.json           "tool definitions the model had on the last request")
+$(file_row raw.jsonl            "lossless original local-proxy entries — open ONLY if other files don't answer the question")
+
+## How to read this
+
+\`\`\`bash
+DIR="$out_dir"
+
+cat "\$DIR/README.md"
+cat "\$DIR/timeline.txt"
+grep -nE '^════' "\$DIR/conversation.txt"
+sed -n '1,200p' "\$DIR/conversation.txt"
+sed -n '500,700p' "\$DIR/conversation.txt"
+grep -nC5 'TOOL_USE: bash' "\$DIR/conversation.txt"
+jq 'select(.status >= 400)' "\$DIR/summary.jsonl"
+grep -E 'WARN|ERROR|recovery|crash|abort' "\$DIR/daemon.log"
+sed -n '/=== daemon-2026042220/,/===/p' "\$DIR/daemon.log"
+sed -n '1,200p' "\$DIR/conversation.first.txt"
+wc -l "\$DIR/system.txt" "\$DIR/tools.json"
+\`\`\`
+
+## Known limits
+
+- Only request bodies are persisted by local-proxy. Streamed SSE response bodies are not stored.
+- Logs are hourly-rotated; old data may be gone.
+- This snapshot exists only if the daemon was started with \`LOCAL_PROXY=1\`.
+
+## After analysis: hand the directory back to the user
+
+\`\`\`
+<media type="file" src="$out_dir/conversation.txt" caption="$sid 完整对话" />
+<media type="file" src="$out_dir/raw.jsonl" caption="$sid 原始日志（lossless）" />
+\`\`\`
+EOF
+
+total_size=$(du -sh "$out_dir" 2>/dev/null | awk '{print $1}')
+cat <<EOF
+[mavis-session-log] sliced session $sid -> $out_dir/  ($total_size, $total request(s), $errors error(s))
+[hint] read $out_dir/README.md first; it lists every file and how to inspect it.
+EOF
