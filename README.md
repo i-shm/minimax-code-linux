@@ -13,14 +13,14 @@
 
 **Direct Download:** Click on the `.deb` file in the `releases/` folder above, or use:
 ```bash
-wget https://github.com/unn-Known1/minimax-agent-linux/raw/main/releases/minimax-agent_3.0.35_amd64.deb
+wget https://github.com/unn-Known1/minimax-agent-linux/releases/download/v3.0.35/minimax-agent_3.0.35_amd64.deb
 ```
 
 ## Installation
 
 ```bash
 # Download the package
-wget https://github.com/unn-Known1/minimax-agent-linux/raw/main/releases/minimax-agent_3.0.35_amd64.deb
+wget https://github.com/unn-Known1/minimax-agent-linux/releases/download/v3.0.35/minimax-agent_3.0.35_amd64.deb
 
 # Install
 sudo dpkg -i minimax-agent_3.0.35_amd64.deb
