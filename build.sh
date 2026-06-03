@@ -125,6 +125,64 @@ if [ -f "$DAEMON_DIR/package.json" ] && command -v npm >/dev/null 2>&1; then
         echo "  Verifying native modules with system Node.js..."
         node -e "try { require('better-sqlite3'); console.log('  better-sqlite3: OK (system Node)'); } catch(e) { console.log('  better-sqlite3: system mismatch (expected — Electron build is used at runtime)'); }" 2>/dev/null || true
         node -e "try { require('fs-native-extensions'); console.log('  fs-native-extensions: OK'); } catch(e) { console.log('  fs-native-extensions: ' + e.message); }" 2>/dev/null || true
+
+        # Install stub packages for opencode shim generation
+        echo ""
+        echo "  Installing opencode shim stub packages..."
+        mkdir -p "$DAEMON_DIR/node_modules/@mavis/opencode-plugin"
+        cat > "$DAEMON_DIR/node_modules/@mavis/opencode-plugin/package.json" << 'STUBPKG'
+{
+  "name": "@mavis/opencode-plugin",
+  "version": "3.0.35",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  }
+}
+STUBPKG
+        cat > "$DAEMON_DIR/node_modules/@mavis/opencode-plugin/index.js" << 'STUBPKG'
+const plugin = {
+  name: "mavis",
+  hooks: {}
+};
+export default plugin;
+STUBPKG
+
+        mkdir -p "$DAEMON_DIR/node_modules/@mavis/opencode-skill-tool"
+        cat > "$DAEMON_DIR/node_modules/@mavis/opencode-skill-tool/package.json" << 'STUBPKG'
+{
+  "name": "@mavis/opencode-skill-tool",
+  "version": "3.0.35",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./ask-user": "./ask-user.js"
+  }
+}
+STUBPKG
+        cat > "$DAEMON_DIR/node_modules/@mavis/opencode-skill-tool/index.js" << 'STUBPKG'
+const skillTool = {
+  name: "skill",
+  execute: async () => {}
+};
+export default skillTool;
+STUBPKG
+        cat > "$DAEMON_DIR/node_modules/@mavis/opencode-skill-tool/ask-user.js" << 'STUBPKG'
+const askUserTool = {
+  name: "ask_user",
+  execute: async () => {}
+};
+export default askUserTool;
+STUBPKG
+        echo "  Stub packages installed."
+
+        # Copy stub packages to app.asar.unpacked as well
+        mkdir -p "$ASAR_UNPACKED_DIR/node_modules/@mavis"
+        cp -r "$DAEMON_DIR/node_modules/@mavis/opencode-plugin" "$ASAR_UNPACKED_DIR/node_modules/@mavis/"
+        cp -r "$DAEMON_DIR/node_modules/@mavis/opencode-skill-tool" "$ASAR_UNPACKED_DIR/node_modules/@mavis/"
+        echo "  Stub packages copied to app.asar.unpacked."
     else
         echo "  WARNING: npm install failed. The daemon may not work."
         echo "  Run manually: cd $DAEMON_DIR && npm install"
