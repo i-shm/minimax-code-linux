@@ -23,6 +23,7 @@ linux-build/*
 
 # Electron runtime binaries (included inside .deb package)
 linux-build/opt/minimax-agent/resources/app.asar
+linux-build/opt/minimax-agent/resources/app.asar.unpacked/
 linux-build/opt/minimax-agent/electron
 linux-build/opt/minimax-agent/chrome-sandbox
 linux-build/opt/minimax-agent/chrome_crashpad_handler
@@ -38,6 +39,10 @@ linux-build/opt/minimax-agent/LICENSES.chromium.html
 linux-build/opt/minimax-agent/LICENSE
 linux-build/opt/minimax-agent/version
 linux-build/opt/minimax-agent/vk_swiftshader_icd.json
+
+# Environment files
+.env.local
+.env.*.local
 
 # Downloaded installers
 *.exe

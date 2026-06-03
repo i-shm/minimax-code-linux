@@ -8,5 +8,6 @@ Recommends: systemd, nodejs (>= 18), build-essential
 Maintainer: MiniMax
 Description: MiniMax Agent Desktop Application
  A powerful AI agent desktop application with chat, tools, and automation capabilities.
+ Includes Electron runtime, backend daemon, and all native modules.
  The backend daemon requires Node.js (>= 18), systemd, and build-essential.
- Install the Electron runtime using: sudo ./setup.sh
+ Run setup.sh after installation to complete configuration.

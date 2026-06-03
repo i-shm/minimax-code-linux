@@ -113,7 +113,7 @@ fi
 # Build the package
 echo ""
 echo "[4/5] Building package..."
-dpkg-deb --build "$BUILD_DIR" "$OUTPUT_DIR/$PACKAGE_NAME"
+GZIP=-1 dpkg-deb -Zgzip -z1 --build "$BUILD_DIR" "$OUTPUT_DIR/$PACKAGE_NAME"
 
 # Verify the package
 echo ""
