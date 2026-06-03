@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Package-deb-red" alt="Package">
 </p>
 
-> **Note**: This is an **unofficial community port** of MiniMax Agent for Linux. MiniMax does not currently offer an official Linux desktop application. This project aims to bring the MiniMax Agent experience to Linux users.
+> **Note**: This is an **unofficial port** of MiniMax Agent for Linux. MiniMax does not currently offer an official Linux desktop application. This project aims to bring the MiniMax Agent experience to Linux users.
 
 ## Download .deb Package
 
