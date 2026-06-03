@@ -1,4 +1,8 @@
 {
   "type": "module",
-  "version": "3.0.35"
+  "version": "3.0.35",
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "fs-native-extensions": "^1.5.0"
+  }
 }

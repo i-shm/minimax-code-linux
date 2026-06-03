@@ -8,6 +8,22 @@ case "$1" in
             xdg-mime default minimax-agent.desktop x-scheme-handler/minimax 2>/dev/null || true
             xdg-mime default minimax-agent.desktop x-scheme-handler/minimax-agent 2>/dev/null || true
         fi
+
+        # Remove the systemd user unit files for every human user
+        for entry in $(getent passwd 2>/dev/null | awk -F: '$3 >= 1000 && $3 < 65534 && $7 !~ /nologin|false/ {print $1":"$6}'); do
+            user="${entry%%:*}"
+            home="${entry#*:}"
+            if [ -z "$user" ] || [ "$user" = "root" ]; then
+                continue
+            fi
+            unit_dir="$home/.config/systemd/user"
+            unit_file="$unit_dir/mavis.service"
+            if [ -f "$unit_file" ]; then
+                rm -f "$unit_file" 2>/dev/null || true
+                # Reload systemd user daemon as the user (best-effort)
+                su -s /bin/bash "$user" -c "XDG_RUNTIME_DIR=/run/user/\$(id -u $user) systemctl --user daemon-reload 2>/dev/null" || true
+            fi
+        done
         ;;
     upgrade|deconfigure)
         ;;
