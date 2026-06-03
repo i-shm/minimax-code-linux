@@ -35,6 +35,41 @@ sudo ./setup.sh
 minimax-agent
 ```
 
+## Screenshots
+
+<p align="center">
+  <img src="Screenshots/screenshot-01.png" alt="MiniMax Agent main interface" width="80%">
+  <br/>
+  <em>Main application interface</em>
+</p>
+
+<p align="center">
+  <img src="Screenshots/screenshot-02.png" alt="Switch to Classic prompt" width="50%">
+  <br/>
+  <em>Switch between Classic and New mode</em>
+</p>
+
+<p align="center">
+  <img src="Screenshots/screenshot-03.png" alt="App running in Classic mode" width="80%">
+  <br/>
+  <em>Classic mode with credits</em>
+</p>
+
+<p align="center">
+  <img src="Screenshots/screenshot-04.png" alt="Token plan restriction" width="80%">
+  <br/>
+  <em>New mode requires a token plan</em>
+</p>
+
+## Usage Notes
+
+If you're using MiniMax Agent with **credits** (not a token plan), you need to **switch to Classic** mode to use the app. The **New** mode requires a token plan subscription. Classic mode works fully with your existing credits.
+
+- **Classic mode** — works with credits, fully functional
+- **New mode** — requires a token plan (not available with credits only)
+
+Use the switch option in the app to toggle between modes.
+
 ## Features
 
 - Full MiniMax Agent functionality
