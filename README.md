@@ -63,10 +63,10 @@ minimax-agent
 
 ## Usage Notes
 
-If you're using MiniMax Agent with **credits** (not a token plan), you need to **switch to Classic** mode to use the app. The **New** mode requires a token plan subscription. Classic mode works fully with your existing credits.
+If you're using MiniMax Agent with **credits** and the app is not working in the default mode, try switching to **Classic** mode. The **New** mode may not work with credits alone (possibly requires a token plan, or it could be a Linux build limitation). Classic mode works fully with your existing credits.
 
 - **Classic mode** — works with credits, fully functional
-- **New mode** — requires a token plan (not available with credits only)
+- **New mode** — may require a token plan or might be limited in the Linux build
 
 Use the switch option in the app to toggle between modes.
 
