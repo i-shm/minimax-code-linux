@@ -51,3 +51,10 @@ linux-build/opt/minimax-agent/vk_swiftshader_icd.json
 # Daemon node_modules (installed by build.sh or setup.sh)
 linux-build/opt/minimax-agent/resources/resources/daemon/node_modules/
 linux-build/opt/minimax-agent/resources/resources/daemon/package-lock.json
+
+# Electron rebuild temp files
+electron-rebuild-temp/
+
+# Build artifacts generated in project root
+import_libnut.js
+index.js
