@@ -89,14 +89,35 @@ if [ -f "$BUILD_DIR/usr/bin/minimax-agent" ]; then
     chmod 755 "$BUILD_DIR/usr/bin/minimax-agent"
 fi
 
+# Install daemon npm dependencies
+DAEMON_DIR="$BUILD_DIR/opt/minimax-agent/resources/resources/daemon"
+if [ -f "$DAEMON_DIR/package.json" ] && command -v npm >/dev/null 2>&1; then
+    echo ""
+    echo "[3/5] Installing daemon dependencies..."
+    cd "$DAEMON_DIR"
+    # Allow install scripts (for native module compilation)
+    npm config set ignore-scripts false 2>/dev/null || true
+    if npm install --omit=dev 2>&1; then
+        echo "  Daemon dependencies installed."
+        # Verify native modules
+        node -e "require('better-sqlite3'); console.log('  better-sqlite3: OK')" 2>/dev/null && \
+            node -e "require('fs-native-extensions'); console.log('  fs-native-extensions: OK')" 2>/dev/null || \
+            echo "  WARNING: Some native modules failed to load. Run npm rebuild in $DAEMON_DIR"
+    else
+        echo "  WARNING: npm install failed. The daemon may not work."
+        echo "  Run manually: cd $DAEMON_DIR && npm install"
+    fi
+    cd "$SCRIPT_DIR"
+fi
+
 # Build the package
 echo ""
-echo "[3/4] Building package..."
+echo "[4/5] Building package..."
 dpkg-deb --build "$BUILD_DIR" "$OUTPUT_DIR/$PACKAGE_NAME"
 
 # Verify the package
 echo ""
-echo "[4/4] Verifying package..."
+echo "[5/5] Verifying package..."
 if [ -f "$OUTPUT_DIR/$PACKAGE_NAME" ]; then
     echo "  Package created successfully!"
     ls -lh "$OUTPUT_DIR/$PACKAGE_NAME"

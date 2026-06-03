@@ -42,3 +42,7 @@ linux-build/opt/minimax-agent/vk_swiftshader_icd.json
 # Downloaded installers
 *.exe
 *.msi
+
+# Daemon node_modules (installed by build.sh or setup.sh)
+linux-build/opt/minimax-agent/resources/resources/daemon/node_modules/
+linux-build/opt/minimax-agent/resources/resources/daemon/package-lock.json

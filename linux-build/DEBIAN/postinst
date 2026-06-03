@@ -30,9 +30,23 @@ case "$1" in
         fi
 
         # ── Backend daemon setup ──
-        # Check Node.js availability (required for the daemon)
+        DAEMON_DIR="/opt/minimax-agent/resources/resources/daemon"
         if command -v node >/dev/null 2>&1; then
-            echo "minimax-agent: Node.js $(node --version) detected."
+            NODE_VER=$(node --version)
+            echo "minimax-agent: Node.js $NODE_VER detected."
+
+            # Verify native daemon modules and rebuild if needed
+            if [ -d "$DAEMON_DIR/node_modules" ]; then
+                NEED_REBUILD=false
+                node -e "require('better-sqlite3')" 2>/dev/null || NEED_REBUILD=true
+                node -e "require('fs-native-extensions')" 2>/dev/null || NEED_REBUILD=true
+                if $NEED_REBUILD && command -v npm >/dev/null 2>&1; then
+                    echo "minimax-agent: Rebuilding native modules for $NODE_VER..."
+                    cd "$DAEMON_DIR" && npm rebuild 2>&1 && \
+                        echo "minimax-agent: Native modules rebuilt." || \
+                        echo "minimax-agent: WARNING - npm rebuild failed. Run manually: cd $DAEMON_DIR && npm rebuild"
+                fi
+            fi
         else
             echo "WARNING: minimax-agent -- Node.js not found."
             echo "  The backend daemon requires Node.js >= 18."
@@ -40,23 +54,37 @@ case "$1" in
             echo "  Or use nvm: https://github.com/nvm-sh/nvm"
         fi
 
-        # Enable systemd user lingering and prepare service for every human user
+        # Prepare backend daemon directories for every human user
+        SYSTEMD_ACTIVE=false
         if command -v loginctl >/dev/null 2>&1 && command -v systemctl >/dev/null 2>&1 && [ "$(ps -p 1 -o comm= 2>/dev/null)" = "systemd" ]; then
-            # Collect users from the system (UID >= 1000, shell not nologin)
-            for entry in $(getent passwd 2>/dev/null | awk -F: '$3 >= 1000 && $3 < 65534 && $7 !~ /nologin|false/ {print $1":"$6}'); do
-                user="${entry%%:*}"
-                home="${entry#*:}"
-                if [ -z "$user" ] || [ "$user" = "root" ]; then
-                    continue
-                fi
-                # Enable linger so systemctl --user works after logout
-                loginctl enable-linger "$user" 2>/dev/null || true
-                # Pre-create daemon log directory
-                mkdir -p "$home/.mavis/logs" 2>/dev/null || true
-                # Fix ownership if we created dirs as root
-                chown "$user:$user" "$home/.mavis" "$home/.mavis/logs" 2>/dev/null || true
-            done
+            SYSTEMD_ACTIVE=true
         fi
+
+        for entry in $(getent passwd 2>/dev/null | awk -F: '$3 >= 1000 && $3 < 65534 && $7 !~ /nologin|false/ {print $1":"$6}'); do
+            user="${entry%%:*}"
+            home="${entry#*:}"
+            if [ -z "$user" ] || [ "$user" = "root" ]; then
+                continue
+            fi
+
+            # Enable linger so systemctl --user works after logout
+            if $SYSTEMD_ACTIVE; then
+                loginctl enable-linger "$user" 2>/dev/null || true
+            fi
+
+            # Handle broken symlink at ~/.mavis (from previous installations)
+            if [ -L "$home/.mavis" ] && [ ! -e "$home/.mavis" ]; then
+                rm -f "$home/.mavis" 2>/dev/null || true
+            fi
+
+            # Pre-create daemon directories
+            mkdir -p "$home/.mavis/logs" 2>/dev/null || true
+            mkdir -p "$home/.mavis/screenshots" 2>/dev/null || true
+
+            # Fix ownership if we created dirs as root
+            chown "$user:$user" "$home/.mavis" 2>/dev/null || true
+            chown -R "$user:$user" "$home/.mavis/logs" "$home/.mavis/screenshots" 2>/dev/null || true
+        done
         ;;
 esac
 
