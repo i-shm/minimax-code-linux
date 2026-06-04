@@ -46,7 +46,7 @@ minimax-agent
 <p align="center">
   <img src="Screenshots/screenshot-02.png" alt="Switch to Classic prompt" width="50%">
   <br/>
-  <em>Switch between Classic and New mode</em>
+  <em>Sign in Page</em>
 </p>
 
 <p align="center">
