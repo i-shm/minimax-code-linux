@@ -58,7 +58,7 @@ minimax-agent
 <p align="center">
   <img src="Screenshots/screenshot-04.png" alt="Token plan restriction" width="80%">
   <br/>
-  <em>New mode requires a token plan</em>
+  <em>New mode requires a token plan (may be problem with the linux build!-known issue)</em>
 </p>
 
 ## Usage Notes
