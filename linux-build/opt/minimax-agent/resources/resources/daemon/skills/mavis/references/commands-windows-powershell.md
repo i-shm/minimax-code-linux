@@ -6,6 +6,10 @@ Do not use bash syntax in PowerShell: no `cat <<EOF` heredocs, no `2>/dev/null`,
 single-quoted multi-line strings with `$VAR` expansion. PowerShell single-quoted strings are
 literal — use `@'…'@` for safe multi-line content, and `$env:VAR` for environment variables.
 
+**Encoding**: Always pass `-Encoding UTF8` when using `Get-Content` or `Set-Content`. Windows
+PowerShell 5.1 defaults to the system ANSI code page (e.g. GBK on Chinese Windows), which
+silently corrupts UTF-8 content. Prefer Read/Write/Edit tools for file content operations.
+
 The recipes below assume the calling agent has the standard environment variables available
 (`PARENT_SESSION_ID`, `agentName`, `CURRENT_SESSION_ID`). When they're not set, substitute
 the literal values directly.

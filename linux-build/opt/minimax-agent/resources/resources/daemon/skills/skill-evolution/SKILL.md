@@ -9,6 +9,8 @@ description: |
   or when you need to read the full schema, attribution rubric, scope
   decision tree, or good/bad examples for either channel. Do not use for
   authoring an actual SKILL.md (that's `skill-creator` / `skill-refiner`).
+descriptions:
+  zh-Hans: "记录和整理 skill 改进信号或新 skill 提案，用于推动 Mavis skill 集合持续演进。"
 ---
 
 # Skill Evolution Channels

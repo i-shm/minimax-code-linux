@@ -387,6 +387,8 @@ Examples:
                         help="Max output tokens (default: 4096)")
     parser.add_argument("--temperature", "-t", type=float, default=None,
                         help="Sampling temperature")
+    parser.add_argument("--timeout", type=float, default=120.0,
+                        help="HTTP request timeout in seconds (default: 120)")
     parser.add_argument("--stream", action="store_true",
                         help="Stream the response")
     parser.add_argument("--list", "-l", action="store_true",
@@ -439,6 +441,7 @@ Examples:
         max_tokens=args.max_tokens,
         temperature=args.temperature,
         stream=args.stream,
+        timeout=args.timeout,
     )
 
     if not args.stream:

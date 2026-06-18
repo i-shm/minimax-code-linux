@@ -45,6 +45,8 @@ description: |              # 必填，触发面，是 LLM 决定要不要打开
 
 可选章节：`Inputs to collect`。如果 skill 输入非常直接，可以省略。
 
+可选章节：`## Windows (win32) platform notes`。如果 skill 包含 shell 命令、脚本调用或 `python3` 引用，加一个 Windows 适配段落，提供 PowerShell 等价命令或跨平台替代方案。纯流程 skill（无 shell 命令）可跳过。
+
 不推荐章节：`When to use this skill`。触发条件应放进 frontmatter `description`，避免重复占用 context。
 
 ## 模板示例：填空版

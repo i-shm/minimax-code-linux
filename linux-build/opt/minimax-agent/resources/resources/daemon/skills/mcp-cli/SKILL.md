@@ -1,6 +1,8 @@
 ---
 name: mcp-cli
 description: "MCP management — add/configure servers, authenticate, sync skills, browse and call tools."
+descriptions:
+  zh-Hans: "管理 MCP：添加和配置 server、认证、同步 skills，并浏览或调用 MCP tools。"
 ---
 
 # MCP Commands

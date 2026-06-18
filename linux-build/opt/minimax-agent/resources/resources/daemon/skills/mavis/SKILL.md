@@ -1,6 +1,8 @@
 ---
 name: mavis
 description: "Mavis runtime entry point. Use this skill for any task about Mavis itself. Trigger when: user asks how to configure or use Mavis, list/inspect/create/update agents, inter-session messaging (use `mavis communication`, not `mavis session`; `finished` means idle/routable, not closed), rotate a session, choose between user/agent/project memory (session memory is removed), schedule a self-reminder while waiting on CI/jobs/batch/human reply, manage hooks (inspect/create/test/delete), control how Feishu or Telegram routes to agents, install or inspect skills, or hot-edit a built-in skill. Also trigger on keywords: mavis agent, mavis session, mavis memory, mavis cron, mavis hook, mavis im, mavis skill, rotate session, report back to parent, set a reminder, wait for CI. Sub-references to read for each subproblem: user-guide, agent, session-and-communication, memory, cron, hook, im, skill-management, skill-evolution."
+descriptions:
+  zh-Hans: "Mavis 运行时入口，用于配置、管理 Agent/session/memory/cron/hook/IM/skill 等 Mavis 自身能力。"
 ---
 
 # Mavis
@@ -22,6 +24,7 @@ entry point for operating that system.
 | `im` | Feishu / Telegram bridge status, route rules, defaults, session strategy selection | control how inbound chats map to agents and sessions |
 | `skill-management` | Skill inventory, visibility, installation, file-level create/update/delete/copy, source/runtime locations | list, inspect, install, or manage skill files |
 | `skill-evolution` | Built-in skill editing rules, attribution, conservative patching, diff checklist, push-failure handling | update a built-in Mavis skill from runtime signals |
+| `windows-tool-bootstrap` | Git Bash requirement, tool detection + auto-install (python, jq, poppler, etc.), bash invocation from PowerShell | any skill script fails on Windows due to missing tools |
 
 ## Read Map
 
@@ -34,6 +37,7 @@ entry point for operating that system.
 - Need to route Feishu or Telegram inbound traffic to the right agent/session strategy -> `references/im.md`
 - Need to list, inspect, install, create/update/delete/copy skill files -> `references/skill-management.md`
 - Need to edit a built-in skill from evolution signals without bloating or damaging it -> `references/skill-evolution.md`
+- Need to install missing tools on Windows (Git Bash, Python, jq, poppler, etc.) or invoke bash scripts from PowerShell -> `references/windows-tool-bootstrap.md`
 
 ## Mandatory platform command router
 

@@ -4,6 +4,10 @@ Shell: Windows PowerShell 5.1+ or PowerShell 7+. Use these recipes only on `win3
 
 Do not use bash syntax in PowerShell: no `mkdir -p`, no `cat <<EOF`, no `/tmp`, no `.sh` scripts, and do not assume `python3` exists. Prefer PowerShell cmdlets and `Join-Path`.
 
+**Encoding**: Always pass `-Encoding UTF8` when using `Get-Content` or `Set-Content`. Windows
+PowerShell 5.1 defaults to the system ANSI code page (e.g. GBK on Chinese Windows), which
+silently corrupts UTF-8 content. Prefer Read/Write/Edit tools for file content operations.
+
 ## list-skills
 
 ```powershell
@@ -56,7 +60,7 @@ Copy-Item -Path (Join-Path $SkillDir "plans/eval-skill.template.yaml") `
 # the RHS as a regex replacement string, where `$1` / `$&` are backrefs
 # and an `[regex]::Escape`'d backslash becomes a literal double backslash
 # in the output.
-$content = Get-Content $EvalYaml -Raw
+$content = Get-Content $EvalYaml -Raw -Encoding UTF8
 $content = $content.Replace('<SKILL_NAME>',  $SkillName)
 $content = $content.Replace('<SKILL_PATH>',  $SkillPath)
 $content = $content.Replace('<EVAL_PROMPT>', $EvalPrompt)

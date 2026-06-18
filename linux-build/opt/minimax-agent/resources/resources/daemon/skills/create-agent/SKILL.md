@@ -1,11 +1,15 @@
 ---
 name: create-agent
-description: "Create one agent on disk. Load when you need to add a new role to the team — typically called by `mavis-team` (when planning analysis says no existing agent fits and the user has consented), by `init-harness` (when bootstrapping `.harness/reins/`), or directly when the user says 'add an agent for X' / 'new an agent' / '加一个 agent' / '建一个 rein'. Two output paths: `~/.mavis/agents/<name>/` (default — cross-project helper) or `<repo>/.harness/reins/<name>/` (when caller specifies project target — coding project rein). Do NOT load to decide WHETHER to create (that lives in `mavis-team` router) or to create a skill (use `skill-creator`)."
+description: "Create one agent on disk. Load when you need to add a new role to the team — typically called by `mavis-team` (when planning analysis says no existing agent fits and the user has consented), by `init` (when bootstrapping `.harness/reins/`), or directly when the user says 'add an agent for X' / 'new an agent' / '加一个 agent' / '建一个 rein'. Two output paths: `~/.mavis/agents/<name>/` (default — cross-project helper) or `<repo>/.harness/reins/<name>/` (when caller specifies project target — coding project rein). Do NOT load to decide WHETHER to create (that lives in `mavis-team` router) or to create a skill (use `skill-creator`)."
+descriptions:
+  zh-Hans: "在磁盘上创建一个 Agent，可用于补充团队角色、初始化项目 rein，或按用户要求新增 Agent。"
+displayNames:
+  zh-Hans: "创建 Agent"
 ---
 
 # Create Agent
 
-You're here because someone — `mavis-team` after consent, `init-harness` during bootstrap, or the user directly — decided to add a new agent. Your job: write the files so it boots correctly. **No design debate at this layer** — that already happened upstream.
+You're here because someone — `mavis-team` after consent, `init` during bootstrap, or the user directly — decided to add a new agent. Your job: write the files so it boots correctly. **No design debate at this layer** — that already happened upstream.
 
 ## Mandatory platform command router
 
@@ -32,7 +36,7 @@ Never translate shell commands across platforms from memory. The platform refere
 | Caller / situation | Where it goes | How to scaffold |
 |---|---|---|
 | Default. Reusable across the user's projects (`coder`, `verifier`, custom helper). | `~/.mavis/agents/<name>/` | `mavis agent new <name>` then edit `agent.md` |
-| Project rein. Caller passed `target=project` (init-harness, or user said "add a rein to this project"). | `<repo>/.harness/reins/<name>/` | Use the `scaffold-project-rein` recipe from the platform command reference, then write `agent.md` directly |
+| Project rein. Caller passed `target=project` (init, or user said "add a rein to this project"). | `<repo>/.harness/reins/<name>/` | Use the `scaffold-project-rein` recipe from the platform command reference, then write `agent.md` directly |
 
 If you're not sure which, ask the upstream caller — don't guess.
 
@@ -123,7 +127,7 @@ If the agent is missing from the list:
 ## After creation: report up
 
 - If `mavis-team` called you: write the new agent's name into the plan / continue routing.
-- If `init-harness` called you: continue the bootstrap procedure.
+- If `init` called you: continue the bootstrap procedure.
 - If the user called you: confirm the agent was created (give the path), then ask what to do with it (start a session, plug it into a plan, etc.).
 
 ## Pitfalls that bite later
@@ -139,7 +143,7 @@ If the agent is missing from the list:
 ## What this skill is NOT for
 
 - Deciding **whether** to add an agent or what roles to add → that analysis lives in `mavis-team` (its router/team-design section)
-- Bootstrapping a brand new project's `.harness/` from scratch → use `init-harness` (it calls back here for each rein)
+- Bootstrapping a brand new project's `.harness/` from scratch → use `init` (it calls back here for each rein)
 - Creating a new skill → use `skill-creator`
 - Editing an existing agent's prompt → just open `<dataDir>/agents/<name>/agent.md` (or the `.harness/reins/<name>/agent.md`) and edit it
 - Deleting an agent → `mavis agent delete <name>` (standalone) or use the `delete-project-rein` recipe from the selected platform command reference, then commit (project rein)

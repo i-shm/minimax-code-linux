@@ -48,8 +48,8 @@ for the report author.
 - **Audience fit** — depth, terminology, and level of detail match the target reader. A board
   summary reads differently from an engineering deep-dive.
 - **Depth fit** — the report is not merely accurate; it is sufficiently detailed for the user's
-  request, elapsed team effort, and the depth contract set by the plan owner. A clean overview can
-  still be a failed deep-research deliverable.
+  request, elapsed team effort, and the expectations set by the plan owner. A clean overview can
+  still fail when the user asked for a detailed evidence-backed report.
 - **Upstream coverage** — when the report depends on multiple verified research tracks, it shows
   where each track's important findings were absorbed and what was intentionally excluded.
 
@@ -66,14 +66,15 @@ synthesis task prompt. This drives formatting, terminology, and detail level:
 If the audience is unspecified, default to the user's apparent context and call it out in the
 report intro.
 
-For deep research, the plan prompt should set a depth level (`brief`, `standard-report`,
-`deep-report`, or `deep-engineering-handbook`) and this report must honor it. Do not compress a
-deep-report request into a short summary just because the executive summary looks polished.
+For high-effort reports, the plan prompt should name the expected audience, evidence standard, and
+level of detail. Do not compress a detailed-report request into a short summary just because the
+executive summary looks polished.
 
-## Deep report required sections
+## Evidence-heavy report required sections
 
-When the task is deep research, a security/architecture audit, or a codebase/system handbook, the
-report body or appendices MUST include the following unless the prompt explicitly marks one as N/A:
+When the task is a security/architecture audit, codebase/system handbook, or other evidence-heavy
+report, the report body or appendices MUST include the following unless the prompt explicitly marks
+one as N/A:
 
 1. **Coverage matrix** — every upstream research track/source pack mapped to final report sections;
    note important excluded findings with the reason.
@@ -93,8 +94,9 @@ report body or appendices MUST include the following unless the prompt explicitl
 
 Executive summaries, visual pages, slides, or top-level dashboards may be added on top of the
 report, but they must not replace the full evidence-backed body unless the user explicitly asks for
-a summary-only artifact. If a conversion step turns a deep report into a webpage or deck, preserve
-the full report content in sections/appendices and add visual navigation or summaries around it.
+a summary-only artifact. If a conversion step turns an evidence-heavy report into a webpage or deck,
+preserve the full report content in sections/appendices and add visual navigation or summaries
+around it.
 
 ## Citation format
 

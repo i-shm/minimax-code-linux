@@ -5,7 +5,7 @@ verification strategy and compact plan patterns.
 
 > ⚠️ YAML strings shown here are English templates and must be translated into the user's language
 > before submitting (mavis-team SKILL.md "Hard rule"). `timeout_ms` is omitted in examples
-> (defaults to 30-min cap).
+> (defaults to 30-min cap), but real plans must still set `max_retries` explicitly on every task.
 
 ## Code preflight
 
@@ -100,6 +100,7 @@ tasks:
   - id: <impl-task>
     assigned_to: coder
     verified_by: [code-reviewer, tester]      # all must PASS
+    max_retries: 2
     verify_prompt:
       code-reviewer: '<adversarial diff review: correctness, architecture, contracts, security>'
       tester: '<runtime checks: fresh install, migration, marker idempotency, baseline attribution>'
@@ -135,6 +136,7 @@ tasks:
     assigned_to: verifier
     depends_on: [data-layer, api-layer, ui-layer]   # gate fires after all tracks PASS
     verified_by: verifier
+    max_retries: 1
     verify_prompt: '<run integration suite, confirm real services (no mocked HTTP), verify cross-track outputs match the contract>'
 ```
 

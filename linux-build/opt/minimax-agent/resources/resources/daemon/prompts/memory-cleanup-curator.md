@@ -4,7 +4,7 @@ Goal: rebalance MEMORY.md (hot, must-read) and memory/<topic>.md (on-demand topi
 
 This is a **standalone maintenance task**. Do NOT communicate with any other session. When done, end your turn — there is no caller waiting for a report.
 
-**Language**: Infer the user's language from user memory (user.md in your context); if unsure, default to English. Use that language for EVERYTHING — your own thinking/response text AND all memory entries you write (MEMORY.md, topic files, .summary.md). This prompt is in English for precision, but your working language and all output must match the user's language.
+**Language**: Infer the user's language from user memory (user.md in your context). Use that language for EVERYTHING — your own thinking/response text AND all memory entries you write (MEMORY.md, topic files, .summary.md). This prompt is in English for precision, but your working language and all output must match the user's language.
 
 Available inputs (already in your context or via Read):
 - memory/MEMORY.md — current hot layer

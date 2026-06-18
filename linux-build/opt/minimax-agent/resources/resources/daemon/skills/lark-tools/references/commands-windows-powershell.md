@@ -4,6 +4,10 @@ Shell: Windows PowerShell 5.1+ or PowerShell 7+. Use these recipes only on `win3
 
 Do not use bash syntax in PowerShell: no `command -v`, no `cat`, no `sed`, no `jq` pipelines, no `2>/dev/null`. Prefer PowerShell cmdlets, `Join-Path`, and `ConvertFrom-Json`.
 
+**Encoding**: Always pass `-Encoding UTF8` when using `Get-Content` or `Set-Content`. Windows
+PowerShell 5.1 defaults to the system ANSI code page (e.g. GBK on Chinese Windows), which
+silently corrupts UTF-8 content. Prefer Read/Write/Edit tools for file content operations.
+
 ## install-lark-cli
 
 ```powershell
@@ -27,7 +31,7 @@ $DataDir = if ($env:__MAVIS_PARENT_DATA_DIR) {
 
 $PortFile = Join-Path $DataDir "daemon.port"
 if (Test-Path $PortFile) {
-  $DaemonPort = (Get-Content -Path $PortFile -Raw).Trim()
+  $DaemonPort = (Get-Content -Path $PortFile -Raw -Encoding UTF8).Trim()
 } else {
   $StatusLine = (mavis status 2>$null) `
     | Select-String -Pattern '^Port:\s*' `

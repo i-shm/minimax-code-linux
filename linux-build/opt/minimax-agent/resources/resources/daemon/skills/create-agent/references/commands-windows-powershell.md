@@ -4,6 +4,10 @@ Shell: Windows PowerShell 5.1+ or PowerShell 7+. Use these recipes only on `win3
 
 Do not use bash syntax in PowerShell: no `mkdir -p`, no `$(pwd)`, no `rm -rf`. Prefer PowerShell cmdlets and `Join-Path`.
 
+**Encoding**: Always pass `-Encoding UTF8` when using `Get-Content` or `Set-Content`. Windows
+PowerShell 5.1 defaults to the system ANSI code page (e.g. GBK on Chinese Windows), which
+silently corrupts UTF-8 content. Prefer Read/Write/Edit tools for file content operations.
+
 ## scaffold-project-rein
 
 Create the `.harness/reins/<name>/` directory inside the project repo (run from the repo root).

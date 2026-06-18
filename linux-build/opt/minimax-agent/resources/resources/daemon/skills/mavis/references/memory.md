@@ -116,7 +116,8 @@ decision rule above.
 
 Agent memory has two forms:
 
-- `MEMORY.md`: always injected; hot rules, current state, frequently triggered discipline
+- `MEMORY.md`: injected when `memory.enabled` is true; hot rules, current state,
+  frequently triggered discipline
 - `memory/<topic>.md`: on-demand topics with YAML `description`; read when description
   matches the current task
 
@@ -141,6 +142,10 @@ Automatic: daily 05:00 UTC+8, write-hook when `MEMORY.md` crosses the threshold,
 or manual `mavis memory cleanup <agent-name>` (`--force` bypasses dedup window).
 The curator rebalances `MEMORY.md` and topics, archives prior state under
 `memory/archive/<date>/`, and ends. Don't manually curate.
+
+Set `memory.enabled=false` to stop prompt injection, reminders, automatic cleanup,
+daily digest updates, and Mavis memory writes. Existing files remain readable via
+show/search/list/read commands.
 
 ## Treat Recalled Memory as a Hint
 
@@ -188,8 +193,8 @@ mavis memory delete-topic <agent-name> <topic-name>
 
 ## The Habit
 
-1. **Start of session:** memories are auto-injected. Topics show as descriptions only —
-   read when the description matches your task.
+1. **Start of session:** when `memory.enabled` is true, memories are auto-injected.
+   Topics show as descriptions only — read when the description matches your task.
 2. **During work:** when you learn something, write immediately. Three-question test,
    narrowest first: project → agent → user. If none fits, keep it task-local.
 3. **Before reporting completion:** pause. Did you learn anything reusable? Write it now.

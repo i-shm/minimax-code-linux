@@ -176,6 +176,14 @@ function lintSkill(skillDir) {
     warn(`body contains README-style section(s): ${readmeMatches.join(', ')}; keep SKILL.md focused on execution rules unless these sections are truly necessary`);
   }
 
+  // 5.2 Windows 适配检查：如果 body 有 shell 命令指标但全文没提到 windows/win32，发 WARN
+  const shellIndicators = [/python3\b/, /bash\s+scripts\//, /brew\s+install/, /\/tmp\//, /```(?:bash|sh)\b/];
+  const hasShellIndicator = shellIndicators.some((re) => re.test(body));
+  const mentionsWindows = /windows|win32/i.test(content);
+  if (hasShellIndicator && !mentionsWindows) {
+    warn('body contains shell/bash commands but does not mention Windows/win32; consider adding a "## Windows (win32) platform notes" section for cross-platform support');
+  }
+
   // 6. 禁用文件检查
   const entries = readdirSync(dirAbs);
   for (const entry of entries) {

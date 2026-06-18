@@ -1,9 +1,13 @@
 ---
 name: mavis-browser
 description: >-
-  Drive the user's real Chrome browser (login state, cookies, extensions) via `mavis browser tool` CLI.
-  Load when the task needs an existing browser session — logged-in sites (小红书/微博/Gmail/company SSO/SaaS dashboards), saved passwords, or persistent cookies.
-  Do NOT load for public/anonymous pages (use playwright MCP).
+  Drive the user's real Chrome browser (logged-in sites, persistent cookies, installed extensions) via `mavis browser tool` CLI.
+  Default browser for normal browsing — public pages, SPAs, login-state pages, and any interactive flow.
+  Lightweight read-only / pure-search tasks should still try `web_search` / `webfetch` first; reach for this skill when a JS-heavy SPA, anti-bot wall, or interactive action makes those insufficient.
+  Do NOT load for development / testing / CI automation — use the playwright MCP for that.
+requiresBeta: browserBridge
+descriptions:
+  zh-Hans: "驱动用户真实 Chrome 浏览器，适用于登录态网页、复杂 SPA、反爬页面和交互式浏览流程。"
 ---
 
 # Mavis Browser
@@ -16,13 +20,27 @@ maintainers live in the `browser-broker-guide` developer skill.
 
 ## When to load this skill
 
+`mavis-browser` drives the user's **real Chrome instance** — their actual profile with cookies,
+logins, saved passwords, extensions, bookmarks. It is the default browser for normal product
+work: public pages, SPAs, login-state pages, interactive flows, anything the user might do
+themselves. The playwright MCP, by contrast, spins up an isolated headless / fresh-profile
+browser; that's the right tool for development / testing / CI automation, not for everyday
+browsing.
+
 | Use this skill | Use playwright MCP instead |
 | --- | --- |
-| Page requires the user to be logged in | Public, anonymous pages |
-| Need cookies / OAuth / SSO state | Anonymous scraping |
-| Acting on user's email / dashboard / SaaS | Render SSR / static HTML |
-| Triggering installed extension features | Headless screenshot / PDF |
-| Persistent browser state matters | One-shot stateless automation |
+| Public pages, SPAs, JS-heavy sites | Development / unit-test fixtures |
+| Pages requiring the user to be logged in | E2E / acceptance test scripts |
+| Acting on user's email / dashboard / SaaS | CI automation / regression suites |
+| Triggering installed extension features | Headless screenshot pipelines |
+| Persistent browser state matters (cookies, OAuth) | One-shot stateless automation |
+| Interactive flows the user would do themselves | Test rigs that need a fresh / isolated profile |
+
+For lightweight read-only or pure-search tasks (e.g. "what does this Wikipedia page say?",
+"summarize this blog post"), prefer `web_search` / `webfetch` first — they are cheaper and
+faster. Fall back to `mavis-browser` when the page is a JS-heavy SPA, behind an anti-bot
+wall, or the user clearly wants you to act on their actual session. This **fail-fast
+fallback** keeps the cheap path in play without giving up on real browsing when it matters.
 
 If the user mentioned their browser, account, "my Chrome", "登录态", or named a specific SaaS
 they're already logged into — you want this skill.

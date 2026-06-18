@@ -26,20 +26,20 @@
 - mavis-team 用 `Simple and medium tasks the orchestrator handles directly — do NOT load this for them` 显式拒绝小任务
 - 两条 description 互相留出了对方的领地，不会同时触发
 
-## 例 2：minimax-docx vs minimax-pptx 的近义区分
+## 例 2：docx vs pptx 的近义区分
 
 两个 skill 都处理 Office 文档，但文件类型和交付物不同：
 
-**minimax-docx**：
+**docx**：
 > Create, inspect, edit, repair, and verify Microsoft Word DOCX documents. Use this skill for formal Word deliverables, tracked document structure, WordprocessingML-level edits, rendering DOCX pages for visual QA, extracting text/styles/tables/images/comments, or preserving DOCX layout and section/header/footer behavior.
 
-**minimax-pptx**：
+**pptx**：
 > Read, inspect, generate, and edit PowerPoint PPTX presentations. Use this skill for extracting slide text, speaker notes, comments, embedded images, screenshots, metadata audits, creating new decks with PptxGenJS, imitating a reference deck's visual style, or editing an existing PPTX while preserving layout.
 
 **写得好的点**：
 - 两条都先声明文件类型（DOCX / PPTX），模型能用扩展名和交付物快速路由
-- `minimax-docx` 把 Word 特有的 section/header/footer、WordprocessingML、page render QA 写进边界
-- `minimax-pptx` 把 slide、speaker notes、screenshots、PptxGenJS、reference deck imitation 写进边界
+- `docx` 把 Word 特有的 section/header/footer、WordprocessingML、page render QA 写进边界
+- `pptx` 把 slide、speaker notes、screenshots、PptxGenJS、reference deck imitation 写进边界
 - 两条 description 不再用"Office 文件"这种泛化说法，避免任何 Office 请求都触发同一个 skill
 
 ## 反例：什么是写得不好的 description
@@ -54,7 +54,7 @@ description: A useful skill for working with files.
 ```
 description: PDF, text, extract, OCR, parse, document, file
 ```
-问题：可能任何提到 PDF 的请求都触发，包括其实该用 `minimax-docx` 或其他相邻 skill 的。
+问题：可能任何提到 PDF 的请求都触发，包括其实该用 `docx` 或其他相邻 skill 的。
 
 **反例 C**（把"什么时候不该用"漏掉）：
 ```

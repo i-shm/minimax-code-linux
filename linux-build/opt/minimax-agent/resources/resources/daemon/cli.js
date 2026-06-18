@@ -972,8 +972,8 @@ var require_command = __commonJS({
   "../../packages/cli/node_modules/commander/lib/command.js"(exports) {
     var EventEmitter = __require("node:events").EventEmitter;
     var childProcess = __require("node:child_process");
-    var path20 = __require("node:path");
-    var fs8 = __require("node:fs");
+    var path24 = __require("node:path");
+    var fs11 = __require("node:fs");
     var process11 = __require("node:process");
     var { Argument: Argument2, humanReadableArgName } = require_argument();
     var { CommanderError: CommanderError2 } = require_error();
@@ -1905,11 +1905,11 @@ Expecting one of '${allowedValues.join("', '")}'`);
         let launchWithNode = false;
         const sourceExt = [".js", ".ts", ".tsx", ".mjs", ".cjs"];
         function findFile(baseDir, baseName) {
-          const localBin = path20.resolve(baseDir, baseName);
-          if (fs8.existsSync(localBin)) return localBin;
-          if (sourceExt.includes(path20.extname(baseName))) return void 0;
+          const localBin = path24.resolve(baseDir, baseName);
+          if (fs11.existsSync(localBin)) return localBin;
+          if (sourceExt.includes(path24.extname(baseName))) return void 0;
           const foundExt = sourceExt.find(
-            (ext) => fs8.existsSync(`${localBin}${ext}`)
+            (ext) => fs11.existsSync(`${localBin}${ext}`)
           );
           if (foundExt) return `${localBin}${foundExt}`;
           return void 0;
@@ -1921,21 +1921,21 @@ Expecting one of '${allowedValues.join("', '")}'`);
         if (this._scriptPath) {
           let resolvedScriptPath;
           try {
-            resolvedScriptPath = fs8.realpathSync(this._scriptPath);
+            resolvedScriptPath = fs11.realpathSync(this._scriptPath);
           } catch (err) {
             resolvedScriptPath = this._scriptPath;
           }
-          executableDir = path20.resolve(
-            path20.dirname(resolvedScriptPath),
+          executableDir = path24.resolve(
+            path24.dirname(resolvedScriptPath),
             executableDir
           );
         }
         if (executableDir) {
           let localFile = findFile(executableDir, executableFile);
           if (!localFile && !subcommand._executableFile && this._scriptPath) {
-            const legacyName = path20.basename(
+            const legacyName = path24.basename(
               this._scriptPath,
-              path20.extname(this._scriptPath)
+              path24.extname(this._scriptPath)
             );
             if (legacyName !== this._name) {
               localFile = findFile(
@@ -1946,7 +1946,7 @@ Expecting one of '${allowedValues.join("', '")}'`);
           }
           executableFile = localFile || executableFile;
         }
-        launchWithNode = sourceExt.includes(path20.extname(executableFile));
+        launchWithNode = sourceExt.includes(path24.extname(executableFile));
         let proc;
         if (process11.platform !== "win32") {
           if (launchWithNode) {
@@ -2786,7 +2786,7 @@ Expecting one of '${allowedValues.join("', '")}'`);
        * @return {Command}
        */
       nameFromFilename(filename) {
-        this._name = path20.basename(filename, path20.extname(filename));
+        this._name = path24.basename(filename, path24.extname(filename));
         return this;
       }
       /**
@@ -2800,9 +2800,9 @@ Expecting one of '${allowedValues.join("', '")}'`);
        * @param {string} [path]
        * @return {(string|null|Command)}
        */
-      executableDir(path21) {
-        if (path21 === void 0) return this._executableDir;
-        this._executableDir = path21;
+      executableDir(path25) {
+        if (path25 === void 0) return this._executableDir;
+        this._executableDir = path25;
         return this;
       }
       /**
@@ -5862,22 +5862,45 @@ var init_asr = __esm({
 });
 
 // ../../packages/config/dist/permission-config.js
-function parsePermissionConfig(raw) {
+function parsePermissionConfig(raw, defaults = PERMISSION_CONFIG_DEFAULTS) {
   const perm = raw.permission;
   if (perm == null || typeof perm !== "object" || Array.isArray(perm)) {
-    return { ...PERMISSION_CONFIG_DEFAULTS };
+    return { ...defaults };
   }
   const obj = perm;
   const t = obj.classifierTimeoutMs;
-  const classifierTimeoutMs = typeof t === "number" && Number.isFinite(t) && t >= 5e3 ? Math.floor(t) : PERMISSION_CONFIG_DEFAULTS.classifierTimeoutMs;
-  return { classifierTimeoutMs };
+  const classifierTimeoutMs = typeof t === "number" && Number.isFinite(t) && t >= 5e3 ? Math.floor(t) : defaults.classifierTimeoutMs;
+  const userConfirmationEnabled = typeof obj.userConfirmationEnabled === "boolean" ? obj.userConfirmationEnabled : defaults.userConfirmationEnabled;
+  return { classifierTimeoutMs, userConfirmationEnabled };
 }
 var PERMISSION_CONFIG_DEFAULTS;
 var init_permission_config = __esm({
   "../../packages/config/dist/permission-config.js"() {
     "use strict";
     PERMISSION_CONFIG_DEFAULTS = {
-      classifierTimeoutMs: 6e4
+      classifierTimeoutMs: 6e4,
+      userConfirmationEnabled: true
+    };
+  }
+});
+
+// ../../packages/config/dist/ask-user-config.js
+function parseAskUserConfig(raw, defaults = ASK_USER_CONFIG_DEFAULTS) {
+  const rawAskUser = raw.askUser;
+  if (rawAskUser == null || typeof rawAskUser !== "object" || Array.isArray(rawAskUser)) {
+    return { ...defaults };
+  }
+  const obj = rawAskUser;
+  return {
+    enabled: typeof obj.enabled === "boolean" ? obj.enabled : defaults.enabled
+  };
+}
+var ASK_USER_CONFIG_DEFAULTS;
+var init_ask_user_config = __esm({
+  "../../packages/config/dist/ask-user-config.js"() {
+    "use strict";
+    ASK_USER_CONFIG_DEFAULTS = {
+      enabled: true
     };
   }
 });
@@ -5957,12 +5980,114 @@ var init_skills_config = __esm({
   }
 });
 
+// ../../packages/config/dist/performance-config.js
+function defaultPerformanceEnabled(buildEnv) {
+  return buildEnv !== "prod";
+}
+function defaultPerformanceCaptureEnabled(buildEnv) {
+  return buildEnv !== "prod";
+}
+function defaultPerformanceSampleIntervalMs(buildEnv) {
+  return buildEnv === "prod" ? DEFAULT_PERFORMANCE_PROD_SAMPLE_INTERVAL_MS : DEFAULT_PERFORMANCE_NON_PROD_SAMPLE_INTERVAL_MS;
+}
+function defaultPerformanceHistoryRetentionMs(buildEnv) {
+  return buildEnv === "prod" ? DEFAULT_PERFORMANCE_HISTORY_RETENTION_MS : 0;
+}
+function defaultPerformanceHistoryMaxBytes(buildEnv) {
+  return buildEnv === "prod" ? DEFAULT_PERFORMANCE_HISTORY_MAX_BYTES : 0;
+}
+function positiveInt(raw, fallback2, min, max = Number.POSITIVE_INFINITY) {
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw <= 0)
+    return fallback2;
+  return Math.min(max, Math.max(min, Math.floor(raw)));
+}
+function nonNegativeInt(raw, fallback2, max = Number.POSITIVE_INFINITY) {
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0)
+    return fallback2;
+  return Math.min(max, Math.floor(raw));
+}
+function parsePerformanceConfig(raw, buildEnv) {
+  const defaults = {
+    enabled: defaultPerformanceEnabled(buildEnv),
+    captureEnabled: defaultPerformanceCaptureEnabled(buildEnv),
+    captureMaxDurationMs: DEFAULT_PERFORMANCE_CONFIG.captureMaxDurationMs,
+    sampleIntervalMs: defaultPerformanceSampleIntervalMs(buildEnv),
+    retentionMs: DEFAULT_PERFORMANCE_CONFIG.retentionMs,
+    historyEnabled: DEFAULT_PERFORMANCE_CONFIG.historyEnabled,
+    historyRetentionMs: defaultPerformanceHistoryRetentionMs(buildEnv),
+    historyMaxBytes: defaultPerformanceHistoryMaxBytes(buildEnv),
+    commandMaxChars: DEFAULT_PERFORMANCE_CONFIG.commandMaxChars,
+    processTree: DEFAULT_PERFORMANCE_CONFIG.processTree
+  };
+  const rawPerf = raw.performance;
+  if (rawPerf == null || typeof rawPerf !== "object" || Array.isArray(rawPerf)) {
+    return { ...defaults };
+  }
+  const obj = rawPerf;
+  const captureObj = obj.capture != null && typeof obj.capture === "object" && !Array.isArray(obj.capture) ? obj.capture : {};
+  return {
+    enabled: typeof obj.enabled === "boolean" ? obj.enabled : defaults.enabled,
+    captureEnabled: typeof obj.captureEnabled === "boolean" ? obj.captureEnabled : defaults.captureEnabled,
+    captureMaxDurationMs: positiveInt(obj.captureMaxDurationMs ?? captureObj.maxDurationMs, defaults.captureMaxDurationMs, MIN_PERFORMANCE_CAPTURE_MAX_DURATION_MS, MAX_PERFORMANCE_CAPTURE_MAX_DURATION_MS),
+    sampleIntervalMs: positiveInt(obj.sampleIntervalMs, defaults.sampleIntervalMs, MIN_PERFORMANCE_SAMPLE_INTERVAL_MS),
+    retentionMs: positiveInt(obj.retentionMs, defaults.retentionMs, MIN_PERFORMANCE_RETENTION_MS),
+    historyEnabled: typeof obj.historyEnabled === "boolean" ? obj.historyEnabled : defaults.historyEnabled,
+    historyRetentionMs: nonNegativeInt(obj.historyRetentionMs, defaults.historyRetentionMs),
+    historyMaxBytes: nonNegativeInt(obj.historyMaxBytes, defaults.historyMaxBytes),
+    commandMaxChars: positiveInt(obj.commandMaxChars, defaults.commandMaxChars, 64, 4096),
+    processTree: typeof obj.processTree === "boolean" ? obj.processTree : defaults.processTree
+  };
+}
+var DEFAULT_PERFORMANCE_PROD_SAMPLE_INTERVAL_MS, DEFAULT_PERFORMANCE_NON_PROD_SAMPLE_INTERVAL_MS, DEFAULT_PERFORMANCE_SAMPLE_INTERVAL_MS, MIN_PERFORMANCE_SAMPLE_INTERVAL_MS, DEFAULT_PERFORMANCE_RETENTION_MS, MIN_PERFORMANCE_RETENTION_MS, DEFAULT_PERFORMANCE_HISTORY_RETENTION_MS, DEFAULT_PERFORMANCE_HISTORY_MAX_BYTES, DEFAULT_PERFORMANCE_COMMAND_MAX_CHARS, DEFAULT_PERFORMANCE_CAPTURE_MAX_DURATION_MS, MIN_PERFORMANCE_CAPTURE_MAX_DURATION_MS, MAX_PERFORMANCE_CAPTURE_MAX_DURATION_MS, DEFAULT_PERFORMANCE_CONFIG;
+var init_performance_config = __esm({
+  "../../packages/config/dist/performance-config.js"() {
+    "use strict";
+    init_config();
+    DEFAULT_PERFORMANCE_PROD_SAMPLE_INTERVAL_MS = 3e4;
+    DEFAULT_PERFORMANCE_NON_PROD_SAMPLE_INTERVAL_MS = 1e4;
+    DEFAULT_PERFORMANCE_SAMPLE_INTERVAL_MS = DEFAULT_PERFORMANCE_NON_PROD_SAMPLE_INTERVAL_MS;
+    MIN_PERFORMANCE_SAMPLE_INTERVAL_MS = 1e3;
+    DEFAULT_PERFORMANCE_RETENTION_MS = 24 * 60 * 60 * 1e3;
+    MIN_PERFORMANCE_RETENTION_MS = 6e4;
+    DEFAULT_PERFORMANCE_HISTORY_RETENTION_MS = 24 * 60 * 60 * 1e3;
+    DEFAULT_PERFORMANCE_HISTORY_MAX_BYTES = 30 * 1024 * 1024;
+    DEFAULT_PERFORMANCE_COMMAND_MAX_CHARS = 512;
+    DEFAULT_PERFORMANCE_CAPTURE_MAX_DURATION_MS = 3e4;
+    MIN_PERFORMANCE_CAPTURE_MAX_DURATION_MS = 500;
+    MAX_PERFORMANCE_CAPTURE_MAX_DURATION_MS = DEFAULT_PERFORMANCE_CAPTURE_MAX_DURATION_MS;
+    DEFAULT_PERFORMANCE_CONFIG = {
+      enabled: false,
+      captureEnabled: false,
+      captureMaxDurationMs: DEFAULT_PERFORMANCE_CAPTURE_MAX_DURATION_MS,
+      sampleIntervalMs: DEFAULT_PERFORMANCE_SAMPLE_INTERVAL_MS,
+      retentionMs: DEFAULT_PERFORMANCE_RETENTION_MS,
+      historyEnabled: true,
+      historyRetentionMs: DEFAULT_PERFORMANCE_HISTORY_RETENTION_MS,
+      historyMaxBytes: DEFAULT_PERFORMANCE_HISTORY_MAX_BYTES,
+      commandMaxChars: DEFAULT_PERFORMANCE_COMMAND_MAX_CHARS,
+      processTree: true
+    };
+  }
+});
+
 // ../../packages/config/dist/config.js
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+function isVelaBuild() {
+  return typeof __IS_VELA_BUILD__ !== "undefined" ? __IS_VELA_BUILD__ : false;
+}
+function getDefaultPermissionMode() {
+  return isVelaBuild() ? "bypassPermissions" : DEFAULTS.permissionMode;
+}
+function getDefaultPermissionConfig() {
+  return isVelaBuild() ? { ...PERMISSION_CONFIG_DEFAULTS, userConfirmationEnabled: false } : PERMISSION_CONFIG_DEFAULTS;
+}
+function getDefaultAskUserConfig() {
+  return isVelaBuild() ? { ...ASK_USER_CONFIG_DEFAULTS, enabled: false } : DEFAULTS.askUser;
+}
 function isLegacyRuntimeEnvAllowed() {
   return process.env.__MAVIS_ALLOW_LEGACY_RUNTIME_ENV === "1";
 }
@@ -5998,7 +6123,8 @@ function getRuntimePresetKey() {
   return `${getRuntimeRegion()}-${getRuntimeBuildEnv()}`;
 }
 function isBetaFeatureProdReady(feature) {
-  return BETA_FEATURE_DEFS[feature].prodReady;
+  const def = BETA_FEATURE_DEFS[feature];
+  return !def.forceDisabled && def.prodReady;
 }
 function runtimeEnv(suffix) {
   return isLegacyRuntimeEnvAllowed() ? process.env[`${RUNTIME_ENV_PREFIX}_${suffix}`] : void 0;
@@ -6214,7 +6340,21 @@ function ensureConfigFile() {
   const configPath = getConfigPath();
   const dir = path.dirname(configPath);
   if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+    let dirToCreate = dir;
+    try {
+      const stat2 = fs.lstatSync(dir);
+      if (stat2.isSymbolicLink()) {
+        dirToCreate = path.resolve(path.dirname(dir), fs.readlinkSync(dir));
+      } else if (process.platform === "win32") {
+        try {
+          const target = fs.readlinkSync(dir);
+          dirToCreate = path.resolve(target);
+        } catch {
+        }
+      }
+    } catch {
+    }
+    fs.mkdirSync(dirToCreate, { recursive: true });
   }
   if (fs.existsSync(configPath)) {
     syncManagedPresetBaseUrl(configPath);
@@ -6301,8 +6441,8 @@ function getConfig() {
     })() : void 0,
     defaultModel: typeof raw.defaultModel === "string" ? raw.defaultModel : void 0,
     defaultLightModel: typeof raw.defaultLightModel === "string" ? raw.defaultLightModel : void 0,
-    permissionMode: typeof raw.permissionMode === "string" && ["default", "bypassPermissions", "auto", "off"].includes(raw.permissionMode) ? raw.permissionMode : DEFAULTS.permissionMode,
-    permission: parsePermissionConfig(raw),
+    permissionMode: typeof raw.permissionMode === "string" && ["default", "bypassPermissions", "auto", "off"].includes(raw.permissionMode) ? raw.permissionMode : getDefaultPermissionMode(),
+    permission: parsePermissionConfig(raw, getDefaultPermissionConfig()),
     sseErrorPush: {
       history: typeof sseErrorPush?.history === "boolean" ? sseErrorPush.history : DEFAULTS.sseErrorPush.history,
       stream: typeof sseErrorPush?.stream === "boolean" ? sseErrorPush.stream : DEFAULTS.sseErrorPush.stream
@@ -6325,10 +6465,11 @@ function getConfig() {
     sessionRotate: parseSessionRotateConfig(raw),
     asr: parseAsrConfig(raw),
     skills: parseSkillsConfig(raw),
-    askUser: parseAskUserConfig(raw),
+    askUser: parseAskUserConfig(raw, getDefaultAskUserConfig()),
     cli: parseCliConfig(raw),
     opencode: parseOpenCodeAdapterConfig2(raw),
     contextManagement: parseContextManagementConfig(raw),
+    performance: parsePerformanceConfig(raw, getRuntimeBuildEnv()),
     logRetentionDays: parseLogRetentionDays(raw),
     contentReview: parseContentReviewConfig(raw),
     cuBackend: parseCuBackend(raw.cuBackend)
@@ -6341,6 +6482,7 @@ function parseMemoryConfig(raw) {
   const dailyDigestRaw = memoryObj.dailyDigest;
   const dailyDigestObj = dailyDigestRaw != null && typeof dailyDigestRaw === "object" && !Array.isArray(dailyDigestRaw) ? dailyDigestRaw : {};
   return {
+    enabled: typeof memoryObj.enabled === "boolean" ? memoryObj.enabled : DEFAULTS.memory.enabled,
     dailyDigest: {
       enabled: typeof dailyDigestObj.enabled === "boolean" ? dailyDigestObj.enabled : DEFAULTS.memory.dailyDigest.enabled
     }
@@ -6351,7 +6493,9 @@ function parseBetaConfig(raw) {
   const obj = raw.beta != null && typeof raw.beta === "object" && !Array.isArray(raw.beta) ? raw.beta : {};
   const result = {};
   for (const [key, def] of Object.entries(BETA_FEATURE_DEFS)) {
-    if (isProd && !def.prodReady) {
+    if (def.forceDisabled) {
+      result[key] = false;
+    } else if (isProd && !def.prodReady) {
       result[key] = false;
     } else {
       const userValue = obj[key];
@@ -6458,17 +6602,6 @@ function parseSessionRotateConfig(raw) {
     activeSessionLookbackHours: typeof rawLookback === "number" && Number.isFinite(rawLookback) && rawLookback > 0 ? rawLookback : defaults.activeSessionLookbackHours
   };
 }
-function parseAskUserConfig(raw) {
-  const defaults = DEFAULTS.askUser;
-  const rawAskUser = raw.askUser;
-  if (rawAskUser == null || typeof rawAskUser !== "object" || Array.isArray(rawAskUser)) {
-    return { ...defaults };
-  }
-  const obj = rawAskUser;
-  return {
-    enabled: typeof obj.enabled === "boolean" ? obj.enabled : defaults.enabled
-  };
-}
 function parseCliConfig(raw) {
   const defaults = DEFAULTS.cli;
   const rawCli = raw.cli;
@@ -6499,18 +6632,15 @@ function parseContextManagementConfig(raw) {
   if (rawCm == null || typeof rawCm !== "object" || Array.isArray(rawCm)) {
     return {
       disableSystemReminderModels: [...defaults.disableSystemReminderModels],
-      rotateThresholdFactor: defaults.rotateThresholdFactor,
-      rotateThresholdCap: defaults.rotateThresholdCap
+      cuMaxScreenshotsInContext: defaults.cuMaxScreenshotsInContext
     };
   }
   const obj = rawCm;
   const rawList = obj.disableSystemReminderModels;
   const disableSystemReminderModels = Array.isArray(rawList) && rawList.every((e) => typeof e === "string" && e.length > 0) ? rawList : [...defaults.disableSystemReminderModels];
-  const rawFactor = obj.rotateThresholdFactor;
-  const rotateThresholdFactor = typeof rawFactor === "number" && Number.isFinite(rawFactor) && rawFactor > 0 ? rawFactor : defaults.rotateThresholdFactor;
-  const rawCap = obj.rotateThresholdCap;
-  const rotateThresholdCap = typeof rawCap === "number" && Number.isFinite(rawCap) && rawCap > 0 ? Math.floor(rawCap) : defaults.rotateThresholdCap;
-  return { disableSystemReminderModels, rotateThresholdFactor, rotateThresholdCap };
+  const rawCuMax = obj.cuMaxScreenshotsInContext;
+  const cuMaxScreenshotsInContext = typeof rawCuMax === "number" && Number.isFinite(rawCuMax) && rawCuMax >= 0 ? Math.floor(rawCuMax) : defaults.cuMaxScreenshotsInContext;
+  return { disableSystemReminderModels, cuMaxScreenshotsInContext };
 }
 function parseLogRetentionDays(raw) {
   const val = raw.logRetentionDays;
@@ -6599,8 +6729,10 @@ var init_config = __esm({
     init_opencode_config();
     init_asr();
     init_permission_config();
+    init_ask_user_config();
     init_skill_evolve_config();
     init_skills_config();
+    init_performance_config();
     init_skill_evolve_config();
     BETA_FEATURE_DEFS = {
       autoMemory: { defaultEnabled: true, prodReady: true },
@@ -6612,8 +6744,10 @@ var init_config = __esm({
       keepAlive: { defaultEnabled: true, prodReady: false },
       promptOverride: { defaultEnabled: true, prodReady: false },
       screenObserver: { defaultEnabled: true, prodReady: false },
-      cuMode: { defaultEnabled: true, prodReady: true },
-      asr: { defaultEnabled: false, prodReady: false }
+      cuMode: { defaultEnabled: false, prodReady: false },
+      asr: { defaultEnabled: false, prodReady: false },
+      teamPlanWorkspaceCard: { defaultEnabled: false, prodReady: false, forceDisabled: true },
+      teamPlanDrilldown: { defaultEnabled: true, prodReady: false }
     };
     BRAND = {
       /** Data directory basename (e.g. '.mavis'). */
@@ -6705,6 +6839,7 @@ var init_config = __esm({
       },
       beta: Object.fromEntries(Object.entries(BETA_FEATURE_DEFS).map(([k, v]) => [k, v.defaultEnabled])),
       memory: {
+        enabled: true,
         dailyDigest: {
           enabled: false
         }
@@ -6738,13 +6873,7 @@ var init_config = __esm({
       asr: { ...ASR_DEFAULTS },
       // mode=proxy by default; proxy reads ASR_PROXY_BASE_URL or asr.proxyBaseUrl. Local mode (dev only) reads SEED_/QWEN_ASR_API_KEY env vars — vendor keys never live in config.yaml.
       skills: DEFAULT_SKILLS_CONFIG,
-      askUser: {
-        // Default ON: front UI may invoke ask_user out of the box. Operators
-        // who need to suppress the tool set `askUser.enabled: false` in
-        // config.yaml — the shim writer, validator, and questionnaire API gate
-        // all honour the flip. See `AskUserConfig`.
-        enabled: true
-      },
+      askUser: ASK_USER_CONFIG_DEFAULTS,
       cli: {
         spawn: {
           enabled: false
@@ -6803,9 +6932,9 @@ var init_config = __esm({
       },
       contextManagement: {
         disableSystemReminderModels: [],
-        rotateThresholdFactor: 0.9,
-        rotateThresholdCap: 5e5
+        cuMaxScreenshotsInContext: 5
       },
+      performance: DEFAULT_PERFORMANCE_CONFIG,
       logRetentionDays: 3,
       cuBackend: DEFAULT_CU_BACKEND
     };
@@ -6843,6 +6972,9 @@ var init_env_builder = __esm({
       "MAVIS_ACCESS_TOKEN",
       "MAVIS_REGION",
       "MAVIS_BUILD_ENV",
+      "MAVIS_PERF_ROOT_PID",
+      "MAVIS_ELECTRON_PERF_URL",
+      "MAVIS_ELECTRON_PERF_TOKEN",
       "__MAVIS_DISABLE_SAFETY",
       "MAVIS_SQLITE3_MODULE_PATH",
       "ELECTRON_RUN_AS_NODE"
@@ -6874,6 +7006,8 @@ var init_env_builder = __esm({
       "__MAVIS_PARENT_AGENT_NAME",
       "__MAVIS_PARENT_MANAGED",
       "__MAVIS_PARENT_ACCESS_TOKEN",
+      "__MAVIS_PARENT_REAL_USER_ID",
+      "__MAVIS_PARENT_USER_EMAIL",
       "__MAVIS_PARENT_USER_NAME",
       "__MAVIS_PARENT_SUB_USER_NAME",
       "__MAVIS_PARENT_AUTH_SECRET"
@@ -7592,6 +7726,13 @@ function formatLocalDateTime(input) {
   const utcLabel = absM === 0 ? `UTC${sign}${absH}` : `UTC${sign}${absH}:${pad(absM)}`;
   return `${datePart} ${timePart} (${USER_TIMEZONE}, ${utcLabel})`;
 }
+function formatFileTimestamp(input) {
+  const d = toDate(input);
+  const pad = (n) => String(n).padStart(2, "0");
+  const datePart = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const timePart = `${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
+  return `${datePart}_${timePart}`;
+}
 var USER_TIMEZONE;
 var init_datetime = __esm({
   "../../packages/cli/src/datetime.ts"() {
@@ -7609,7 +7750,7 @@ var init_datetime = __esm({
 });
 
 // ../../packages/cli/src/format.ts
-import { openSync, fstatSync, readSync, closeSync, existsSync, readdirSync } from "node:fs";
+import { openSync, fstatSync, readSync, closeSync, existsSync as existsSync2, readdirSync } from "node:fs";
 import path3 from "node:path";
 function printTable(rows) {
   const keyWidth = Math.max(...rows.map(([k]) => k.length));
@@ -7619,9 +7760,9 @@ function printTable(rows) {
   }
 }
 function truncate(str2, maxLen) {
-  const oneLine = str2.replace(/\n/g, " ").trim();
-  if (oneLine.length <= maxLen) return oneLine;
-  return `${oneLine.slice(0, maxLen - 1)}\u2026`;
+  const oneLine2 = str2.replace(/\n/g, " ").trim();
+  if (oneLine2.length <= maxLen) return oneLine2;
+  return `${oneLine2.slice(0, maxLen - 1)}\u2026`;
 }
 function printAgentTable(agents) {
   if (agents.length === 0) {
@@ -7754,7 +7895,7 @@ function formatPinoLine(line, minLevel = 40) {
 }
 function printLogTail(logsDir, maxLines = 20) {
   try {
-    if (!existsSync(logsDir)) return;
+    if (!existsSync2(logsDir)) return;
     const logFiles = readdirSync(logsDir).filter((f) => f.startsWith("daemon-") && f.endsWith(".log")).sort();
     if (logFiles.length === 0) return;
     const lines = readLastLines(path3.join(logsDir, logFiles[logFiles.length - 1]), maxLines);
@@ -7842,7 +7983,7 @@ __export(service_exports, {
   uninstallService: () => uninstallService
 });
 import { execFileSync } from "node:child_process";
-import { existsSync as existsSync2 } from "node:fs";
+import { existsSync as existsSync3 } from "node:fs";
 import fs3 from "node:fs/promises";
 import path5 from "node:path";
 import os3 from "node:os";
@@ -7964,7 +8105,7 @@ WantedBy=default.target`;
 }
 function isServiceInstalled() {
   if (process.platform === "darwin") {
-    if (!existsSync2(getPlistPath())) return false;
+    if (!existsSync3(getPlistPath())) return false;
     try {
       execFileSync("launchctl", ["list", getLaunchdLabel()], { stdio: "ignore" });
       return true;
@@ -7972,7 +8113,7 @@ function isServiceInstalled() {
       return false;
     }
   } else if (process.platform === "linux") {
-    if (!existsSync2(getSystemdPath())) return false;
+    if (!existsSync3(getSystemdPath())) return false;
     try {
       execFileSync("systemctl", ["--user", "is-enabled", `${getSystemdUnitName()}.service`], {
         stdio: "ignore"
@@ -8124,7 +8265,7 @@ async function cleanupLegacyService() {
   if (process.platform === "darwin") {
     const legacyLabel = profile ? `${LEGACY_LAUNCHD_LABEL_BASE}.${profile}` : LEGACY_LAUNCHD_LABEL_BASE;
     const legacyPlist = path5.join(os3.homedir(), "Library", "LaunchAgents", `${legacyLabel}.plist`);
-    if (existsSync2(legacyPlist)) {
+    if (existsSync3(legacyPlist)) {
       const uid = getUid();
       try {
         execFileSync("launchctl", ["bootout", `gui/${uid}`, legacyPlist], { stdio: "pipe" });
@@ -8144,7 +8285,7 @@ async function cleanupLegacyService() {
       "user",
       `${legacyUnit}.service`
     );
-    if (existsSync2(legacyPath)) {
+    if (existsSync3(legacyPath)) {
       try {
         execFileSync("systemctl", ["--user", "disable", "--now", `${legacyUnit}.service`], {
           stdio: "pipe"
@@ -8162,7 +8303,7 @@ async function cleanupLegacyService() {
 async function uninstallService() {
   if (process.platform === "darwin") {
     const p = getPlistPath();
-    if (!existsSync2(p)) return;
+    if (!existsSync3(p)) return;
     const uid = getUid();
     const label = getLaunchdLabel();
     try {
@@ -8178,7 +8319,7 @@ async function uninstallService() {
     console.log(`Service uninstalled (label: ${label}).`);
   } else if (process.platform === "linux") {
     const p = getSystemdPath();
-    if (!existsSync2(p)) return;
+    if (!existsSync3(p)) return;
     const unitName = getSystemdUnitName();
     try {
       execFileSync("systemctl", ["--user", "disable", "--now", `${unitName}.service`], {
@@ -8255,7 +8396,7 @@ function registerServiceCommands(program3) {
   svc.command("status").description("Show service status").action(async () => {
     if (process.platform === "darwin") {
       const label = getLaunchdLabel();
-      const installed = existsSync2(getPlistPath());
+      const installed = existsSync3(getPlistPath());
       console.log(`Service installed: ${installed ? "yes" : "no"} (label: ${label})`);
       if (installed) {
         try {
@@ -8267,7 +8408,7 @@ function registerServiceCommands(program3) {
       }
     } else if (process.platform === "linux") {
       const unitName = getSystemdUnitName();
-      const installed = existsSync2(getSystemdPath());
+      const installed = existsSync3(getSystemdPath());
       console.log(`Service installed: ${installed ? "yes" : "no"} (unit: ${unitName})`);
       if (installed) {
         try {
@@ -8313,7 +8454,7 @@ var init_service = __esm({
 // ../../packages/cli/src/ensure-daemon.ts
 import { spawn, execSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
-import { existsSync as existsSync3, mkdirSync as mkdirSync2, openSync as openSync2, readFileSync } from "node:fs";
+import { existsSync as existsSync4, mkdirSync as mkdirSync2, openSync as openSync2, readFileSync } from "node:fs";
 import path6 from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 function getBaseUrl2(port) {
@@ -8321,7 +8462,7 @@ function getBaseUrl2(port) {
   return `http://127.0.0.1:${p}/mavis`;
 }
 function getCliVersion() {
-  if (true) return "3.0.35";
+  if (true) return "3.0.46";
   const root = getCliPackageRoot();
   try {
     const raw = readFileSync(path6.join(root, "package.json"), "utf-8");
@@ -8339,11 +8480,13 @@ function compareSemver(a, b) {
   }
   return 0;
 }
-async function checkVersionMismatch() {
+async function checkVersionMismatch(port) {
   const cliVer = getCliVersion();
   if (cliVer === "0.0.0") return null;
   try {
-    const res = await fetch(`${getBaseUrl2()}/api/version`, { signal: AbortSignal.timeout(2e3) });
+    const res = await fetch(`${getBaseUrl2(port)}/api/version`, {
+      signal: AbortSignal.timeout(2e3)
+    });
     if (!res.ok) return null;
     const data = await res.json();
     const daemonVer = typeof data.version === "string" ? data.version : null;
@@ -8487,13 +8630,13 @@ async function waitForHealth(timeoutMs = 5e3, pollIntervalMs = 200, port, abortE
 function getCliPackageRoot() {
   let dir = __dirname2;
   for (let i = 0; i < 5; i++) {
-    if (existsSync3(path6.join(dir, "package.json"))) return dir;
+    if (existsSync4(path6.join(dir, "package.json"))) return dir;
     dir = path6.dirname(dir);
   }
   return path6.resolve(__dirname2, "..");
 }
 function findFirst(candidates) {
-  return candidates.find((p) => existsSync3(p));
+  return candidates.find((p) => existsSync4(p));
 }
 function resolveDaemonEntryPoint() {
   const cliRoot = getCliPackageRoot();
@@ -8525,7 +8668,7 @@ function openLogFd() {
   const logFile = path6.join(logDir, "daemon-spawn.log");
   return openSync2(logFile, "a");
 }
-function spawnDaemon() {
+function spawnDaemon(port) {
   const logFd = openLogFd();
   let resolved;
   try {
@@ -8535,18 +8678,25 @@ function spawnDaemon() {
     process.exit(1);
   }
   const { bin, args, cwd } = resolved;
-  const daemonArgs = [...args, "--port", String(resolvePort()), "--data-dir", getDataDir()];
+  const daemonArgs = [...args, "--port", String(port), "--data-dir", getDataDir()];
   const profile = getProfile();
   if (profile) daemonArgs.push("--profile", profile);
   const runtimeRegion = process.env.MAVIS_REGION;
   const runtimeBuildEnv = process.env.MAVIS_BUILD_ENV;
+  const isVelaBuild2 = typeof __IS_VELA_BUILD__ !== "undefined" ? __IS_VELA_BUILD__ : false;
+  const runtimeAccessToken = process.env.MAVIS_ACCESS_TOKEN;
+  const velaTokenForward = isVelaBuild2 && runtimeAccessToken ? {
+    __MAVIS_PARENT_ACCESS_TOKEN: runtimeAccessToken,
+    MAVIS_ACCESS_TOKEN: runtimeAccessToken
+  } : {};
   const proc = spawn(bin, daemonArgs, {
     detached: true,
     windowsHide: true,
     stdio: ["ignore", logFd, logFd],
     env: buildChildEnv("spawn-daemon", {
       ...runtimeRegion ? { MAVIS_REGION: runtimeRegion } : {},
-      ...runtimeBuildEnv ? { MAVIS_BUILD_ENV: runtimeBuildEnv } : {}
+      ...runtimeBuildEnv ? { MAVIS_BUILD_ENV: runtimeBuildEnv } : {},
+      ...velaTokenForward
     }),
     cwd
   });
@@ -8554,7 +8704,7 @@ function spawnDaemon() {
   return proc;
 }
 function isNpmBundle() {
-  return existsSync3(path6.join(__dirname2, "daemon.js"));
+  return existsSync4(path6.join(__dirname2, "daemon.js"));
 }
 async function getServiceFunctions() {
   const { isServiceInstalled: isServiceInstalled2, restartService: restartService2, installService: installService2 } = await Promise.resolve().then(() => (init_service(), service_exports));
@@ -8562,24 +8712,24 @@ async function getServiceFunctions() {
 }
 async function ensureDaemon(opts) {
   if (isAttachedMode()) {
-    return { spawned: false };
+    return { spawned: false, port: getAttachedPort() };
   }
   const skipService = opts?.skipService ?? !isNpmBundle();
   if (!skipService) {
     try {
       const { isServiceInstalled: isServiceInstalled2 } = await getServiceFunctions();
       if (isServiceInstalled2()) {
-        const port = resolvePort();
+        const port = opts?.explicitPort ?? resolvePort();
         const serviceHealthy = await waitForHealth(15e3, 300, port);
         if (serviceHealthy) {
-          const mismatch = await checkVersionMismatch();
+          const mismatch = await checkVersionMismatch(port);
           if (mismatch) {
             const msg = `Version mismatch: daemon v${mismatch.daemon}, CLI v${mismatch.cli}. Run \`mavis daemon restart\` to upgrade.`;
             process.stderr.write(`Warning: ${msg}
 `);
             cliLog("WARN", msg);
           }
-          return { spawned: false };
+          return { spawned: false, port };
         }
         process.stderr.write(
           `Warning: Service installed but daemon not healthy after 15s on port ${String(port)}
@@ -8593,17 +8743,17 @@ async function ensureDaemon(opts) {
     } catch {
     }
   }
-  const discoveredPort = getRunningDaemonPort() ?? resolvePort();
+  const discoveredPort = opts?.explicitPort ?? getRunningDaemonPort() ?? resolvePort();
   const healthy = await waitForHealth(2e3, 200, discoveredPort);
   if (healthy) {
-    const mismatch = await checkVersionMismatch();
+    const mismatch = await checkVersionMismatch(discoveredPort);
     if (mismatch) {
       const msg = `Version mismatch: daemon v${mismatch.daemon}, CLI v${mismatch.cli}. Run \`mavis daemon restart\` to upgrade.`;
       process.stderr.write(`Warning: ${msg}
 `);
       cliLog("WARN", msg);
     }
-    return { spawned: false };
+    return { spawned: false, port: discoveredPort };
   }
   const pid = await readPid();
   if (pid !== null && isPidRunning(pid)) {
@@ -8611,13 +8761,13 @@ async function ensureDaemon(opts) {
     process.stderr.write(`Warning: ${msg}
 `);
     cliLog("WARN", msg);
-    return { spawned: false };
+    return { spawned: false, port: discoveredPort };
   }
-  const calcPort = resolvePort();
+  const calcPort = opts?.explicitPort ?? resolvePort();
   console.log(`  \u68C0\u67E5\u7AEF\u53E3 ${String(calcPort)} ...`);
   await ensurePortFree(calcPort);
   console.log("  \u542F\u52A8 Daemon ...");
-  const daemonProc = spawnDaemon();
+  const daemonProc = spawnDaemon(calcPort);
   const spawnState = {
     error: null,
     exit: null
@@ -8660,7 +8810,7 @@ async function ensureDaemon(opts) {
     } catch {
     }
   }
-  return { spawned: true };
+  return { spawned: true, port: calcPort };
 }
 var __filename, __dirname2;
 var init_ensure_daemon = __esm({
@@ -12542,9 +12692,9 @@ var require_Action = __commonJS({
       function Action2(scheduler, work) {
         return _super.call(this) || this;
       }
-      Action2.prototype.schedule = function(state, delay) {
-        if (delay === void 0) {
-          delay = 0;
+      Action2.prototype.schedule = function(state, delay2) {
+        if (delay2 === void 0) {
+          delay2 = 0;
         }
         return this;
       };
@@ -12640,10 +12790,10 @@ var require_AsyncAction = __commonJS({
         _this.pending = false;
         return _this;
       }
-      AsyncAction2.prototype.schedule = function(state, delay) {
+      AsyncAction2.prototype.schedule = function(state, delay2) {
         var _a;
-        if (delay === void 0) {
-          delay = 0;
+        if (delay2 === void 0) {
+          delay2 = 0;
         }
         if (this.closed) {
           return this;
@@ -12652,24 +12802,24 @@ var require_AsyncAction = __commonJS({
         var id = this.id;
         var scheduler = this.scheduler;
         if (id != null) {
-          this.id = this.recycleAsyncId(scheduler, id, delay);
+          this.id = this.recycleAsyncId(scheduler, id, delay2);
         }
         this.pending = true;
-        this.delay = delay;
-        this.id = (_a = this.id) !== null && _a !== void 0 ? _a : this.requestAsyncId(scheduler, this.id, delay);
+        this.delay = delay2;
+        this.id = (_a = this.id) !== null && _a !== void 0 ? _a : this.requestAsyncId(scheduler, this.id, delay2);
         return this;
       };
-      AsyncAction2.prototype.requestAsyncId = function(scheduler, _id, delay) {
-        if (delay === void 0) {
-          delay = 0;
+      AsyncAction2.prototype.requestAsyncId = function(scheduler, _id, delay2) {
+        if (delay2 === void 0) {
+          delay2 = 0;
         }
-        return intervalProvider_1.intervalProvider.setInterval(scheduler.flush.bind(scheduler, this), delay);
+        return intervalProvider_1.intervalProvider.setInterval(scheduler.flush.bind(scheduler, this), delay2);
       };
-      AsyncAction2.prototype.recycleAsyncId = function(_scheduler, id, delay) {
-        if (delay === void 0) {
-          delay = 0;
+      AsyncAction2.prototype.recycleAsyncId = function(_scheduler, id, delay2) {
+        if (delay2 === void 0) {
+          delay2 = 0;
         }
-        if (delay != null && this.delay === delay && this.pending === false) {
+        if (delay2 != null && this.delay === delay2 && this.pending === false) {
           return id;
         }
         if (id != null) {
@@ -12677,12 +12827,12 @@ var require_AsyncAction = __commonJS({
         }
         return void 0;
       };
-      AsyncAction2.prototype.execute = function(state, delay) {
+      AsyncAction2.prototype.execute = function(state, delay2) {
         if (this.closed) {
           return new Error("executing a cancelled action");
         }
         this.pending = false;
-        var error = this._execute(state, delay);
+        var error = this._execute(state, delay2);
         if (error) {
           return error;
         } else if (this.pending === false && this.id != null) {
@@ -12847,23 +12997,23 @@ var require_AsapAction = __commonJS({
         _this.work = work;
         return _this;
       }
-      AsapAction2.prototype.requestAsyncId = function(scheduler, id, delay) {
-        if (delay === void 0) {
-          delay = 0;
+      AsapAction2.prototype.requestAsyncId = function(scheduler, id, delay2) {
+        if (delay2 === void 0) {
+          delay2 = 0;
         }
-        if (delay !== null && delay > 0) {
-          return _super.prototype.requestAsyncId.call(this, scheduler, id, delay);
+        if (delay2 !== null && delay2 > 0) {
+          return _super.prototype.requestAsyncId.call(this, scheduler, id, delay2);
         }
         scheduler.actions.push(this);
         return scheduler._scheduled || (scheduler._scheduled = immediateProvider_1.immediateProvider.setImmediate(scheduler.flush.bind(scheduler, void 0)));
       };
-      AsapAction2.prototype.recycleAsyncId = function(scheduler, id, delay) {
+      AsapAction2.prototype.recycleAsyncId = function(scheduler, id, delay2) {
         var _a;
-        if (delay === void 0) {
-          delay = 0;
+        if (delay2 === void 0) {
+          delay2 = 0;
         }
-        if (delay != null ? delay > 0 : this.delay > 0) {
-          return _super.prototype.recycleAsyncId.call(this, scheduler, id, delay);
+        if (delay2 != null ? delay2 > 0 : this.delay > 0) {
+          return _super.prototype.recycleAsyncId.call(this, scheduler, id, delay2);
         }
         var actions = scheduler.actions;
         if (id != null && ((_a = actions[actions.length - 1]) === null || _a === void 0 ? void 0 : _a.id) !== id) {
@@ -12895,11 +13045,11 @@ var require_Scheduler = __commonJS({
         this.schedulerActionCtor = schedulerActionCtor;
         this.now = now;
       }
-      Scheduler2.prototype.schedule = function(work, delay, state) {
-        if (delay === void 0) {
-          delay = 0;
+      Scheduler2.prototype.schedule = function(work, delay2, state) {
+        if (delay2 === void 0) {
+          delay2 = 0;
         }
-        return new this.schedulerActionCtor(this, work).schedule(state, delay);
+        return new this.schedulerActionCtor(this, work).schedule(state, delay2);
       };
       Scheduler2.now = dateTimestampProvider_1.dateTimestampProvider.now;
       return Scheduler2;
@@ -13089,27 +13239,27 @@ var require_QueueAction = __commonJS({
         _this.work = work;
         return _this;
       }
-      QueueAction2.prototype.schedule = function(state, delay) {
-        if (delay === void 0) {
-          delay = 0;
+      QueueAction2.prototype.schedule = function(state, delay2) {
+        if (delay2 === void 0) {
+          delay2 = 0;
         }
-        if (delay > 0) {
-          return _super.prototype.schedule.call(this, state, delay);
+        if (delay2 > 0) {
+          return _super.prototype.schedule.call(this, state, delay2);
         }
-        this.delay = delay;
+        this.delay = delay2;
         this.state = state;
         this.scheduler.flush(this);
         return this;
       };
-      QueueAction2.prototype.execute = function(state, delay) {
-        return delay > 0 || this.closed ? _super.prototype.execute.call(this, state, delay) : this._execute(state, delay);
+      QueueAction2.prototype.execute = function(state, delay2) {
+        return delay2 > 0 || this.closed ? _super.prototype.execute.call(this, state, delay2) : this._execute(state, delay2);
       };
-      QueueAction2.prototype.requestAsyncId = function(scheduler, id, delay) {
-        if (delay === void 0) {
-          delay = 0;
+      QueueAction2.prototype.requestAsyncId = function(scheduler, id, delay2) {
+        if (delay2 === void 0) {
+          delay2 = 0;
         }
-        if (delay != null && delay > 0 || delay == null && this.delay > 0) {
-          return _super.prototype.requestAsyncId.call(this, scheduler, id, delay);
+        if (delay2 != null && delay2 > 0 || delay2 == null && this.delay > 0) {
+          return _super.prototype.requestAsyncId.call(this, scheduler, id, delay2);
         }
         scheduler.flush(this);
         return 0;
@@ -13205,25 +13355,25 @@ var require_AnimationFrameAction = __commonJS({
         _this.work = work;
         return _this;
       }
-      AnimationFrameAction2.prototype.requestAsyncId = function(scheduler, id, delay) {
-        if (delay === void 0) {
-          delay = 0;
+      AnimationFrameAction2.prototype.requestAsyncId = function(scheduler, id, delay2) {
+        if (delay2 === void 0) {
+          delay2 = 0;
         }
-        if (delay !== null && delay > 0) {
-          return _super.prototype.requestAsyncId.call(this, scheduler, id, delay);
+        if (delay2 !== null && delay2 > 0) {
+          return _super.prototype.requestAsyncId.call(this, scheduler, id, delay2);
         }
         scheduler.actions.push(this);
         return scheduler._scheduled || (scheduler._scheduled = animationFrameProvider_1.animationFrameProvider.requestAnimationFrame(function() {
           return scheduler.flush(void 0);
         }));
       };
-      AnimationFrameAction2.prototype.recycleAsyncId = function(scheduler, id, delay) {
+      AnimationFrameAction2.prototype.recycleAsyncId = function(scheduler, id, delay2) {
         var _a;
-        if (delay === void 0) {
-          delay = 0;
+        if (delay2 === void 0) {
+          delay2 = 0;
         }
-        if (delay != null ? delay > 0 : this.delay > 0) {
-          return _super.prototype.recycleAsyncId.call(this, scheduler, id, delay);
+        if (delay2 != null ? delay2 > 0 : this.delay > 0) {
+          return _super.prototype.recycleAsyncId.call(this, scheduler, id, delay2);
         }
         var actions = scheduler.actions;
         if (id != null && id === scheduler._scheduled && ((_a = actions[actions.length - 1]) === null || _a === void 0 ? void 0 : _a.id) !== id) {
@@ -13394,41 +13544,41 @@ var require_VirtualTimeScheduler = __commonJS({
         _this.index = scheduler.index = index;
         return _this;
       }
-      VirtualAction2.prototype.schedule = function(state, delay) {
-        if (delay === void 0) {
-          delay = 0;
+      VirtualAction2.prototype.schedule = function(state, delay2) {
+        if (delay2 === void 0) {
+          delay2 = 0;
         }
-        if (Number.isFinite(delay)) {
+        if (Number.isFinite(delay2)) {
           if (!this.id) {
-            return _super.prototype.schedule.call(this, state, delay);
+            return _super.prototype.schedule.call(this, state, delay2);
           }
           this.active = false;
           var action = new VirtualAction2(this.scheduler, this.work);
           this.add(action);
-          return action.schedule(state, delay);
+          return action.schedule(state, delay2);
         } else {
           return Subscription_1.Subscription.EMPTY;
         }
       };
-      VirtualAction2.prototype.requestAsyncId = function(scheduler, id, delay) {
-        if (delay === void 0) {
-          delay = 0;
+      VirtualAction2.prototype.requestAsyncId = function(scheduler, id, delay2) {
+        if (delay2 === void 0) {
+          delay2 = 0;
         }
-        this.delay = scheduler.frame + delay;
+        this.delay = scheduler.frame + delay2;
         var actions = scheduler.actions;
         actions.push(this);
         actions.sort(VirtualAction2.sortActions);
         return 1;
       };
-      VirtualAction2.prototype.recycleAsyncId = function(scheduler, id, delay) {
-        if (delay === void 0) {
-          delay = 0;
+      VirtualAction2.prototype.recycleAsyncId = function(scheduler, id, delay2) {
+        if (delay2 === void 0) {
+          delay2 = 0;
         }
         return void 0;
       };
-      VirtualAction2.prototype._execute = function(state, delay) {
+      VirtualAction2.prototype._execute = function(state, delay2) {
         if (this.active === true) {
-          return _super.prototype._execute.call(this, state, delay);
+          return _super.prototype._execute.call(this, state, delay2);
         }
       };
       VirtualAction2.sortActions = function(a, b) {
@@ -14071,9 +14221,9 @@ var require_executeSchedule = __commonJS({
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.executeSchedule = void 0;
-    function executeSchedule(parentSubscription, scheduler, work, delay, repeat2) {
-      if (delay === void 0) {
-        delay = 0;
+    function executeSchedule(parentSubscription, scheduler, work, delay2, repeat2) {
+      if (delay2 === void 0) {
+        delay2 = 0;
       }
       if (repeat2 === void 0) {
         repeat2 = false;
@@ -14081,11 +14231,11 @@ var require_executeSchedule = __commonJS({
       var scheduleSubscription = scheduler.schedule(function() {
         work();
         if (repeat2) {
-          parentSubscription.add(this.schedule(null, delay));
+          parentSubscription.add(this.schedule(null, delay2));
         } else {
           this.unsubscribe();
         }
-      }, delay);
+      }, delay2);
       parentSubscription.add(scheduleSubscription);
       if (!repeat2) {
         return scheduleSubscription;
@@ -14104,23 +14254,23 @@ var require_observeOn = __commonJS({
     var executeSchedule_1 = require_executeSchedule();
     var lift_1 = require_lift();
     var OperatorSubscriber_1 = require_OperatorSubscriber();
-    function observeOn(scheduler, delay) {
-      if (delay === void 0) {
-        delay = 0;
+    function observeOn(scheduler, delay2) {
+      if (delay2 === void 0) {
+        delay2 = 0;
       }
       return lift_1.operate(function(source, subscriber) {
         source.subscribe(OperatorSubscriber_1.createOperatorSubscriber(subscriber, function(value) {
           return executeSchedule_1.executeSchedule(subscriber, scheduler, function() {
             return subscriber.next(value);
-          }, delay);
+          }, delay2);
         }, function() {
           return executeSchedule_1.executeSchedule(subscriber, scheduler, function() {
             return subscriber.complete();
-          }, delay);
+          }, delay2);
         }, function(err) {
           return executeSchedule_1.executeSchedule(subscriber, scheduler, function() {
             return subscriber.error(err);
-          }, delay);
+          }, delay2);
         }));
       });
     }
@@ -14135,14 +14285,14 @@ var require_subscribeOn = __commonJS({
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.subscribeOn = void 0;
     var lift_1 = require_lift();
-    function subscribeOn(scheduler, delay) {
-      if (delay === void 0) {
-        delay = 0;
+    function subscribeOn(scheduler, delay2) {
+      if (delay2 === void 0) {
+        delay2 = 0;
       }
       return lift_1.operate(function(source, subscriber) {
         subscriber.add(scheduler.schedule(function() {
           return source.subscribe(subscriber);
-        }, delay));
+        }, delay2));
       });
     }
     exports.subscribeOn = subscribeOn;
@@ -14663,7 +14813,7 @@ var require_timeout = __commonJS({
         var timerSubscription;
         var lastValue = null;
         var seen = 0;
-        var startTimer = function(delay) {
+        var startTimer = function(delay2) {
           timerSubscription = executeSchedule_1.executeSchedule(subscriber, scheduler, function() {
             try {
               originalSourceSubscription.unsubscribe();
@@ -14675,7 +14825,7 @@ var require_timeout = __commonJS({
             } catch (err) {
               subscriber.error(err);
             }
-          }, delay);
+          }, delay2);
         };
         originalSourceSubscription = source.subscribe(OperatorSubscriber_1.createOperatorSubscriber(subscriber, function(value) {
           timerSubscription === null || timerSubscription === void 0 ? void 0 : timerSubscription.unsubscribe();
@@ -17015,7 +17165,7 @@ var require_delay = __commonJS({
     var async_1 = require_async();
     var delayWhen_1 = require_delayWhen();
     var timer_1 = require_timer();
-    function delay(due, scheduler) {
+    function delay2(due, scheduler) {
       if (scheduler === void 0) {
         scheduler = async_1.asyncScheduler;
       }
@@ -17024,7 +17174,7 @@ var require_delay = __commonJS({
         return duration;
       });
     }
-    exports.delay = delay;
+    exports.delay = delay2;
   }
 });
 
@@ -18106,10 +18256,10 @@ var require_repeat = __commonJS({
     function repeat2(countOrConfig) {
       var _a;
       var count = Infinity;
-      var delay;
+      var delay2;
       if (countOrConfig != null) {
         if (typeof countOrConfig === "object") {
-          _a = countOrConfig.count, count = _a === void 0 ? Infinity : _a, delay = countOrConfig.delay;
+          _a = countOrConfig.count, count = _a === void 0 ? Infinity : _a, delay2 = countOrConfig.delay;
         } else {
           count = countOrConfig;
         }
@@ -18122,8 +18272,8 @@ var require_repeat = __commonJS({
         var resubscribe = function() {
           sourceSub === null || sourceSub === void 0 ? void 0 : sourceSub.unsubscribe();
           sourceSub = null;
-          if (delay != null) {
-            var notifier = typeof delay === "number" ? timer_1.timer(delay) : innerFrom_1.innerFrom(delay(soFar));
+          if (delay2 != null) {
+            var notifier = typeof delay2 === "number" ? timer_1.timer(delay2) : innerFrom_1.innerFrom(delay2(soFar));
             var notifierSubscriber_1 = OperatorSubscriber_1.createOperatorSubscriber(subscriber, function() {
               notifierSubscriber_1.unsubscribe();
               subscribeToSource();
@@ -18236,7 +18386,7 @@ var require_retry = __commonJS({
           count: configOrCount
         };
       }
-      var _a = config.count, count = _a === void 0 ? Infinity : _a, delay = config.delay, _b = config.resetOnSuccess, resetOnSuccess = _b === void 0 ? false : _b;
+      var _a = config.count, count = _a === void 0 ? Infinity : _a, delay2 = config.delay, _b = config.resetOnSuccess, resetOnSuccess = _b === void 0 ? false : _b;
       return count <= 0 ? identity_1.identity : lift_1.operate(function(source, subscriber) {
         var soFar = 0;
         var innerSub;
@@ -18258,8 +18408,8 @@ var require_retry = __commonJS({
                   syncUnsub = true;
                 }
               };
-              if (delay != null) {
-                var notifier = typeof delay === "number" ? timer_1.timer(delay) : innerFrom_1.innerFrom(delay(err, soFar));
+              if (delay2 != null) {
+                var notifier = typeof delay2 === "number" ? timer_1.timer(delay2) : innerFrom_1.innerFrom(delay2(err, soFar));
                 var notifierSubscriber_1 = OperatorSubscriber_1.createOperatorSubscriber(subscriber, function() {
                   notifierSubscriber_1.unsubscribe();
                   resub_1();
@@ -20667,9 +20817,9 @@ var require_cli_width = __commonJS({
   }
 });
 
-// ../../node_modules/ansi-regex/index.js
+// ../../node_modules/strip-ansi/node_modules/ansi-regex/index.js
 var require_ansi_regex = __commonJS({
-  "../../node_modules/ansi-regex/index.js"(exports, module) {
+  "../../node_modules/strip-ansi/node_modules/ansi-regex/index.js"(exports, module) {
     "use strict";
     module.exports = ({ onlyFirst = false } = {}) => {
       const pattern = [
@@ -21640,15 +21790,15 @@ var require_route = __commonJS({
       };
     }
     function wrapConversion(toModel, graph) {
-      const path20 = [graph[toModel].parent, toModel];
+      const path24 = [graph[toModel].parent, toModel];
       let fn = conversions[graph[toModel].parent][toModel];
       let cur = graph[toModel].parent;
       while (graph[cur].parent) {
-        path20.unshift(graph[cur].parent);
+        path24.unshift(graph[cur].parent);
         fn = link(conversions[graph[cur].parent][cur], fn);
         cur = graph[cur].parent;
       }
-      fn.conversion = path20;
+      fn.conversion = path24;
       return fn;
     }
     module.exports = function(fromModel) {
@@ -21930,7 +22080,7 @@ var require_wrap_ansi = __commonJS({
       }
       return words.slice(0, last).join(" ") + words.slice(last).join("");
     };
-    var exec2 = (string, columns, options = {}) => {
+    var exec = (string, columns, options = {}) => {
       if (options.trim !== false && string.trim() === "") {
         return "";
       }
@@ -21999,7 +22149,7 @@ var require_wrap_ansi = __commonJS({
       return ret;
     };
     module.exports = (string, columns, options) => {
-      return String(string).normalize().replace(/\r\n/g, "\n").split("\n").map((line) => exec2(line, columns, options)).join("\n");
+      return String(string).normalize().replace(/\r\n/g, "\n").split("\n").map((line) => exec(line, columns, options)).join("\n");
     };
   }
 });
@@ -33825,10 +33975,10 @@ var require_lib = __commonJS({
     exports.analyse = analyse;
     var detectFile = (filepath, opts = {}) => new Promise((resolve2, reject) => {
       let fd;
-      const fs8 = (0, node_1.default)();
+      const fs11 = (0, node_1.default)();
       const handler = (err, buffer) => {
         if (fd) {
-          fs8.closeSync(fd);
+          fs11.closeSync(fd);
         }
         if (err) {
           reject(err);
@@ -33840,9 +33990,9 @@ var require_lib = __commonJS({
       };
       const sampleSize = (opts === null || opts === void 0 ? void 0 : opts.sampleSize) || 0;
       if (sampleSize > 0) {
-        fd = fs8.openSync(filepath, "r");
+        fd = fs11.openSync(filepath, "r");
         let sample = Buffer.allocUnsafe(sampleSize);
-        fs8.read(fd, sample, 0, sampleSize, opts.offset, (err, bytesRead) => {
+        fs11.read(fd, sample, 0, sampleSize, opts.offset, (err, bytesRead) => {
           if (err) {
             handler(err, null);
           } else {
@@ -33854,22 +34004,22 @@ var require_lib = __commonJS({
         });
         return;
       }
-      fs8.readFile(filepath, handler);
+      fs11.readFile(filepath, handler);
     });
     exports.detectFile = detectFile;
     var detectFileSync = (filepath, opts = {}) => {
-      const fs8 = (0, node_1.default)();
+      const fs11 = (0, node_1.default)();
       if (opts && opts.sampleSize) {
-        const fd = fs8.openSync(filepath, "r");
+        const fd = fs11.openSync(filepath, "r");
         let sample = Buffer.allocUnsafe(opts.sampleSize);
-        const bytesRead = fs8.readSync(fd, sample, 0, opts.sampleSize, opts.offset);
+        const bytesRead = fs11.readSync(fd, sample, 0, opts.sampleSize, opts.offset);
         if (bytesRead < opts.sampleSize) {
           sample = sample.subarray(0, bytesRead);
         }
-        fs8.closeSync(fd);
+        fs11.closeSync(fd);
         return (0, exports.detect)(sample);
       }
-      return (0, exports.detect)(fs8.readFileSync(filepath));
+      return (0, exports.detect)(fs11.readFileSync(filepath));
     };
     exports.detectFileSync = detectFileSync;
     exports.default = {
@@ -38263,9 +38413,9 @@ var init_prompt = __esm({
     init_utils();
     init_baseUI();
     _ = {
-      set: (obj, path20 = "", value) => {
+      set: (obj, path24 = "", value) => {
         let pointer = obj;
-        path20.split(".").forEach((key, index, arr) => {
+        path24.split(".").forEach((key, index, arr) => {
           if (key === "__proto__" || key === "constructor") return;
           if (index === arr.length - 1) {
             pointer[key] = value;
@@ -38275,8 +38425,8 @@ var init_prompt = __esm({
           pointer = pointer[key];
         });
       },
-      get: (obj, path20 = "", defaultValue) => {
-        const travel = (regexp) => String.prototype.split.call(path20, regexp).filter(Boolean).reduce(
+      get: (obj, path24 = "", defaultValue) => {
+        const travel = (regexp) => String.prototype.split.call(path24, regexp).filter(Boolean).reduce(
           // @ts-expect-error implicit any on res[key]
           (res, key) => res !== null && res !== void 0 ? res[key] : res,
           obj
@@ -38466,8 +38616,7 @@ var init_lib = __esm({
 });
 
 // ../../packages/cli/src/index.ts
-import { readFileSync as readFileSync8 } from "node:fs";
-import path19 from "node:path";
+import path23 from "node:path";
 import os10 from "node:os";
 
 // ../../packages/cli/node_modules/commander/esm.mjs
@@ -38501,6 +38650,8 @@ import * as path7 from "node:path";
 // ../../packages/cli/src/http.ts
 init_dist();
 init_attached_mode();
+import { existsSync } from "node:fs";
+import nodePath from "node:path";
 var DAEMON_HOST = "127.0.0.1";
 function getBaseUrl() {
   const parentUrl = process.env.__MAVIS_PARENT_DAEMON_URL?.trim();
@@ -38513,10 +38664,7 @@ function getBaseUrl() {
   const port = getRunningDaemonPort();
   if (port === null) {
     const profileHint = profileHintFragment();
-    throw new DaemonError(
-      `No Mavis daemon running${profileHint}. Run \`mavis start\` to start one.`,
-      0
-    );
+    throw new DaemonError(`No Mavis daemon running${profileHint}. ${daemonStartHint()}`, 0);
   }
   return `http://${DAEMON_HOST}:${port}/mavis`;
 }
@@ -38541,12 +38689,23 @@ function profileHintFragment() {
   const profile = safeGetProfile();
   return profile ? ` for profile "${profile}"` : "";
 }
+function isRepoDevCwd() {
+  try {
+    return existsSync(nodePath.join(process.cwd(), "package.json")) && existsSync(nodePath.join(process.cwd(), "scripts", "flame-local.mjs")) && existsSync(nodePath.join(process.cwd(), "packages", "cli", "dist", "index.js"));
+  } catch {
+    return false;
+  }
+}
+function daemonStartHint() {
+  if (!isRepoDevCwd()) return "Run `mavis start` to start it.";
+  return "Run `node packages/cli/dist/index.js start --no-web` to start this worktree daemon. For desktop profiling, use `pnpm flame:e2e`.";
+}
 function buildConnectionErrorMessage(rawError) {
   if (isAttachedMode()) {
     return `Cannot connect to Mavis daemon (supervisor-managed): ${rawError}. Check the supervisor process (e.g. desktop app).`;
   }
   const profileHint = profileHintFragment();
-  return `Cannot connect to Mavis daemon${profileHint}: ${rawError}. Run \`mavis start\` to start it.`;
+  return `Cannot connect to Mavis daemon${profileHint}: ${rawError}. ${daemonStartHint()}`;
 }
 var DaemonError = class extends Error {
   constructor(message, statusCode, body) {
@@ -38599,11 +38758,11 @@ var DaemonClient = class {
    *
    * Error messages branch on the rail:
    *   - No daemon for current profile (standalone) → "No Mavis daemon
-   *     running for profile X. Run `mavis start`..." (raised by
+   *     running for profile X..." with a context-aware start hint (raised by
    *     `getBaseUrl()`).
    *   - Attached mode, daemon listed but unhealthy → "check the supervisor"
    *   - Standalone, daemon listed but unhealthy → "Mavis daemon is not
-   *     running... Run `mavis start`..." (with profile hint).
+   *     running..." with the same context-aware start hint.
    */
   async requireRunning() {
     const baseUrl = this.baseUrl;
@@ -38620,23 +38779,20 @@ var DaemonClient = class {
       );
     }
     const profileHint = profileHintFragment();
-    throw new DaemonError(
-      `Mavis daemon is not running${profileHint}. Run \`mavis start\` to start it.`,
-      0
-    );
+    throw new DaemonError(`Mavis daemon is not running${profileHint}. ${daemonStartHint()}`, 0);
   }
   /** General-purpose HTTP request to the daemon */
-  async request(method, path20, body, timeout) {
-    const res = await this.fetchResponse(method, path20, body, timeout);
+  async request(method, path24, body, timeout) {
+    const res = await this.fetchResponse(method, path24, body, timeout);
     const result = await this.readResponseBody(res);
     if (process.env.MAVIS_DEBUG === "1") {
-      process.stderr.write(`[DEBUG] ${method} ${path20} \u2192 ${JSON.stringify(result)}
+      process.stderr.write(`[DEBUG] ${method} ${path24} \u2192 ${JSON.stringify(result)}
 `);
     }
     return result;
   }
-  async *stream(path20, body) {
-    const res = await this.fetchResponse("POST", path20, body);
+  async *stream(path24, body) {
+    const res = await this.fetchResponse("POST", path24, body);
     const reader = res.body?.getReader();
     if (reader === void 0) {
       yield { type: "done" };
@@ -38670,8 +38826,8 @@ var DaemonClient = class {
     }
     yield { type: "done" };
   }
-  async fetchResponse(method, path20, body, timeout) {
-    const url = `${this.baseUrl}${path20}`;
+  async fetchResponse(method, path24, body, timeout) {
+    const url = `${this.baseUrl}${path24}`;
     const headers = { "Content-Type": "application/json" };
     const archonAgent = process.env.__MAVIS_PARENT_AGENT_NAME;
     const archonSession = process.env.__MAVIS_PARENT_SESSION_ID;
@@ -38701,7 +38857,7 @@ var DaemonClient = class {
     const contentType = res.headers.get("content-type") ?? "";
     if (contentType.includes("text/html")) {
       throw new DaemonError(
-        `Daemon route not found at ${path20} \u2014 the daemon may be out of date. Restart with: mavis daemon restart`,
+        `Daemon route not found at ${path24} \u2014 the daemon may be out of date. Restart with: mavis daemon restart`,
         404
       );
     }
@@ -38715,31 +38871,31 @@ var DaemonClient = class {
     return res.text();
   }
   /** GET helper */
-  async get(path20, timeout) {
-    return this.request("GET", path20, void 0, timeout);
+  async get(path24, timeout) {
+    return this.request("GET", path24, void 0, timeout);
   }
   /** POST helper */
-  async post(path20, body) {
-    return this.request("POST", path20, body);
+  async post(path24, body) {
+    return this.request("POST", path24, body);
   }
   /** PATCH helper */
-  async patch(path20, body) {
-    return this.request("PATCH", path20, body);
+  async patch(path24, body) {
+    return this.request("PATCH", path24, body);
   }
   /** PUT helper */
-  async put(path20, body) {
-    return this.request("PUT", path20, body);
+  async put(path24, body) {
+    return this.request("PUT", path24, body);
   }
   /** DELETE helper */
-  async delete(path20) {
-    return this.request("DELETE", path20);
+  async delete(path24) {
+    return this.request("DELETE", path24);
   }
   /**
    * Upload a file via multipart/form-data.
    * Unlike `request()`, this sends FormData instead of JSON.
    */
-  async uploadFormData(path20, formData, timeout) {
-    const url = `${this.baseUrl}${path20}`;
+  async uploadFormData(path24, formData, timeout) {
+    const url = `${this.baseUrl}${path24}`;
     const headers = {};
     const archonAgent = process.env.__MAVIS_PARENT_AGENT_NAME;
     const archonSession = process.env.__MAVIS_PARENT_SESSION_ID;
@@ -38768,7 +38924,7 @@ var DaemonClient = class {
     const contentType = res.headers.get("content-type") ?? "";
     if (contentType.includes("text/html")) {
       throw new DaemonError(
-        `Daemon route not found at ${path20} \u2014 the daemon may be out of date. Restart with: mavis daemon restart`,
+        `Daemon route not found at ${path24} \u2014 the daemon may be out of date. Restart with: mavis daemon restart`,
         404
       );
     }
@@ -38953,7 +39109,7 @@ function writeInstallChannel(channel) {
 `);
 }
 function getCliVersion2() {
-  if (true) return "3.0.35";
+  if (true) return "3.0.46";
   try {
     const require3 = createRequire(import.meta.url);
     return require3("../package.json").version;
@@ -39456,9 +39612,7 @@ function handleDaemonError(err) {
 init_datetime();
 init_format();
 var ENGINE_LABELS = {
-  opencode: "OpenCode",
-  "claude-code": "Claude Code",
-  codex: "Codex"
+  opencode: "OpenCode"
 };
 var ROLE_LABELS = {
   0: "Worker",
@@ -39537,7 +39691,7 @@ function registerAgentCommands(program3) {
       }
     }
   );
-  agentCmd.command("new <name>").description("Create a new agent").option("--engine <type>", "Agent engine type (opencode, claude-code, codex)", "opencode").option("--persona <text>", "Agent persona").option("--system-prompt <text>", "Agent system prompt").option("--display-name <name>", "Display name for the agent").option("--description <text>", "Short description of the agent").action(
+  agentCmd.command("new <name>").description("Create a new agent").option("--engine <type>", "Agent engine type (opencode)", "opencode").option("--persona <text>", "Agent persona").option("--system-prompt <text>", "Agent system prompt").option("--display-name <name>", "Display name for the agent").option("--description <text>", "Short description of the agent").action(
     async (name, opts) => {
       const frameworkType = opts.engine ?? "opencode";
       try {
@@ -39701,7 +39855,7 @@ function registerAgentCommands(program3) {
   agentCmd.command("logs [nameOrId]").description("Show recent logs for an agent (or daemon logs)").option("-n, --lines <number>", "Number of lines to show", "50").action(async (nameOrId, opts) => {
     const lineCount = parseInt(opts.lines ?? "50", 10);
     const { readFile: readFile3 } = await import("node:fs/promises");
-    const { existsSync: existsSync13 } = await import("node:fs");
+    const { existsSync: existsSync14 } = await import("node:fs");
     const { getConfig: getConf } = await Promise.resolve().then(() => (init_dist(), dist_exports));
     try {
       await getClient().requireRunning();
@@ -39718,7 +39872,7 @@ function registerAgentCommands(program3) {
         const h = String(now.getHours()).padStart(2, "0");
         logPath = `${logsDir}/daemon-${y}${m}${d}${h}.log`;
       }
-      if (!existsSync13(logPath)) {
+      if (!existsSync14(logPath)) {
         console.log(`No log file found at: ${logPath}`);
         return;
       }
@@ -40651,7 +40805,7 @@ Key Decisions / Open Questions / Next Steps) to that path first, then re-run.`
         await fs5.mkdir(path9.dirname(scratchpadPath), { recursive: true });
         await fs5.writeFile(scratchpadPath, "", "utf-8");
       }
-      const { spawn: spawn4 } = await import("node:child_process");
+      const { spawn: spawn5 } = await import("node:child_process");
       const editor = process.env.EDITOR;
       let cmd;
       let args;
@@ -40673,7 +40827,7 @@ Key Decisions / Open Questions / Next Steps) to that path first, then re-run.`
         cmd = editor;
         args = [scratchpadPath];
       }
-      const child = spawn4(cmd, args, { stdio: "inherit" });
+      const child = spawn5(cmd, args, { stdio: "inherit" });
       await new Promise((resolve2, reject) => {
         child.on("error", reject);
         child.on("exit", (code) => {
@@ -41261,7 +41415,7 @@ function registerConfigCommands(program3) {
 
 // ../../packages/cli/src/commands/init.ts
 init_source();
-import { existsSync as existsSync5, readFileSync as readFileSync4, writeFileSync as writeFileSync3, mkdirSync as mkdirSync3 } from "node:fs";
+import { existsSync as existsSync6, readFileSync as readFileSync4, writeFileSync as writeFileSync3, mkdirSync as mkdirSync3 } from "node:fs";
 import path12 from "node:path";
 import { execFileSync as execFileSync5, spawn as nodeSpawn } from "node:child_process";
 
@@ -42194,15 +42348,15 @@ init_dist();
 
 // ../../packages/cli/src/resolve-binary.ts
 import { execFileSync as execFileSync4 } from "node:child_process";
-import { existsSync as existsSync4 } from "node:fs";
+import { existsSync as existsSync5 } from "node:fs";
 import path10 from "node:path";
 import os5 from "node:os";
 function resolveOpencodeBinary(configPath) {
   const envPath = process.env.OPENCODE_PATH;
-  if (envPath && existsSync4(envPath)) return envPath;
-  if (configPath && existsSync4(configPath)) return configPath;
+  if (envPath && existsSync5(envPath)) return envPath;
+  if (configPath && existsSync5(configPath)) return configPath;
   const defaultPath = path10.join(os5.homedir(), ".opencode", "bin", "opencode");
-  if (existsSync4(defaultPath)) return defaultPath;
+  if (existsSync5(defaultPath)) return defaultPath;
   try {
     const result = execFileSync4("which", ["opencode"], { encoding: "utf-8" }).trim();
     if (result) return result;
@@ -42312,7 +42466,7 @@ function registerInitCommand(program3) {
       }
     }
     process.stdout.write("\n  Checking configuration...\n\n");
-    if (!existsSync5(dataDir)) {
+    if (!existsSync6(dataDir)) {
       mkdirSync3(dataDir, { recursive: true });
       process.stdout.write(`${source_default.green("  \u2705 Data directory")}   ${dataDir} (created)
 `);
@@ -42732,16 +42886,16 @@ function registerSkillCommands(program3) {
       try {
         await getClient().requireRunning();
         const name = await resolveDefaultAgentName(agentName);
-        let path20;
+        let path24;
         if (opts.all) {
-          path20 = "/api/skill";
+          path24 = "/api/skill";
         } else {
-          path20 = `/api/agent/${encodeURIComponent(name)}/skill`;
+          path24 = `/api/agent/${encodeURIComponent(name)}/skill`;
         }
         if (opts.scope) {
-          path20 += `?scope=${encodeURIComponent(opts.scope)}`;
+          path24 += `?scope=${encodeURIComponent(opts.scope)}`;
         }
-        const body = await getClient().get(path20);
+        const body = await getClient().get(path24);
         if (opts.human) {
           console.log(source_default.gray(`Skills dir: ${body.agentSkillsDir}`));
           console.log();
@@ -42797,11 +42951,11 @@ function registerSkillCommands(program3) {
   skillCmd.command("show <name>").description("Show details and content of a skill").option("-a, --agent <name>", "Agent name to scope the lookup").option("-H, --human", "Human-readable output (default: JSON)").action(async (name, opts) => {
     try {
       await getClient().requireRunning();
-      let path20 = `/api/skill/${encodeURIComponent(name)}`;
+      let path24 = `/api/skill/${encodeURIComponent(name)}`;
       if (opts.agent) {
-        path20 += `?agentName=${encodeURIComponent(opts.agent)}`;
+        path24 += `?agentName=${encodeURIComponent(opts.agent)}`;
       }
-      const result = await getClient().get(path20);
+      const result = await getClient().get(path24);
       if (opts.human) {
         printTable([
           ["Name", result.name],
@@ -43006,8 +43160,8 @@ function registerSkillCommands(program3) {
         if (opts.attribution) params.set("attribution", opts.attribution);
         if (opts.limit) params.set("limit", opts.limit);
         const qs = params.toString();
-        const path20 = `/api/skill-evolve/signals${qs ? `?${qs}` : ""}`;
-        const result = await getClient().get(path20);
+        const path24 = `/api/skill-evolve/signals${qs ? `?${qs}` : ""}`;
+        const result = await getClient().get(path24);
         if (opts.human) {
           console.log(source_default.gray(`Total: ${String(result.total)} signal(s)`));
           console.log();
@@ -43169,8 +43323,8 @@ function registerSkillCommands(program3) {
         if (opts.channel) params.set("channel", opts.channel);
         if (opts.limit) params.set("limit", opts.limit);
         const qs = params.toString();
-        const path20 = `/api/skill-evolve/proposals${qs ? `?${qs}` : ""}`;
-        const result = await getClient().get(path20);
+        const path24 = `/api/skill-evolve/proposals${qs ? `?${qs}` : ""}`;
+        const result = await getClient().get(path24);
         if (opts.human) {
           console.log(source_default.gray(`Total: ${String(result.total)} proposal(s)`));
           console.log();
@@ -43310,7 +43464,7 @@ init_source();
 init_js_yaml();
 init_dist();
 import { readFile as readFile2, writeFile, mkdir, readdir, cp, stat } from "node:fs/promises";
-import { existsSync as existsSync6, readFileSync as readFileSync6 } from "node:fs";
+import { existsSync as existsSync7, readFileSync as readFileSync6 } from "node:fs";
 import path14 from "node:path";
 init_format();
 
@@ -43604,7 +43758,7 @@ function registerTeamCommands(program3) {
       for (const agent of exportable) {
         const exportName = hasProjectPrefix(agent.name) ? stripProjectPrefix(agent.name) : agent.name;
         const agentOutputDir = path14.join(outputDir, exportName);
-        if (existsSync6(agentOutputDir) && !force) {
+        if (existsSync7(agentOutputDir) && !force) {
           results.push({
             name: agent.name,
             status: "skipped",
@@ -43615,16 +43769,16 @@ function registerTeamCommands(program3) {
         try {
           await mkdir(agentOutputDir, { recursive: true });
           const agentSourceDir = path14.join(dataDir, "agents", agent.name);
-          const hasNewFormat = existsSync6(path14.join(agentSourceDir, "PERSONA.md")) || existsSync6(path14.join(agentSourceDir, "agent.md")) || existsSync6(path14.join(agentSourceDir, "config.yaml"));
+          const hasNewFormat = existsSync7(path14.join(agentSourceDir, "PERSONA.md")) || existsSync7(path14.join(agentSourceDir, "agent.md")) || existsSync7(path14.join(agentSourceDir, "config.yaml"));
           if (hasNewFormat) {
             for (const filename of CONTENT_FILES) {
               const srcFile = path14.join(agentSourceDir, filename);
-              if (existsSync6(srcFile)) {
+              if (existsSync7(srcFile)) {
                 await cp(srcFile, path14.join(agentOutputDir, filename));
               }
             }
             const configPath = path14.join(agentSourceDir, "config.yaml");
-            if (existsSync6(configPath)) {
+            if (existsSync7(configPath)) {
               const rawYaml = await readFile2(configPath, "utf-8");
               const parsed = jsYaml.load(rawYaml);
               if (parsed !== null && typeof parsed === "object") {
@@ -43651,7 +43805,7 @@ function registerTeamCommands(program3) {
             }
           }
           const metaPath = path14.join(agentSourceDir, "_meta.json");
-          if (existsSync6(metaPath)) {
+          if (existsSync7(metaPath)) {
             const rawMeta = await readFile2(metaPath, "utf-8");
             const parsed = JSON.parse(rawMeta);
             if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
@@ -43666,7 +43820,7 @@ function registerTeamCommands(program3) {
             }
           }
           const skillsDir = path14.join(agentSourceDir, "skills");
-          if (existsSync6(skillsDir)) {
+          if (existsSync7(skillsDir)) {
             try {
               const entries = await readdir(skillsDir);
               if (entries.length > 0) {
@@ -43678,12 +43832,12 @@ function registerTeamCommands(program3) {
           }
           for (const filename of KNOWLEDGE_FILES) {
             const srcFile = path14.join(agentSourceDir, filename);
-            if (existsSync6(srcFile)) {
+            if (existsSync7(srcFile)) {
               await cp(srcFile, path14.join(agentOutputDir, filename));
             }
           }
           const memoryFile = path14.join(agentSourceDir, "memory", "MEMORY.md");
-          if (existsSync6(memoryFile)) {
+          if (existsSync7(memoryFile)) {
             try {
               const memStat = await stat(memoryFile);
               if (memStat.size > 0) {
@@ -44986,8 +45140,8 @@ function registerMcpCommands(program3) {
         await getClient().requireRunning();
         let rawJson;
         if (opts.file) {
-          const fs8 = await import("node:fs");
-          rawJson = fs8.readFileSync(opts.file, "utf8");
+          const fs11 = await import("node:fs");
+          rawJson = fs11.readFileSync(opts.file, "utf8");
         } else if (opts.stdin) {
           rawJson = await readStdin2();
         } else if (argsJson) {
@@ -45154,11 +45308,11 @@ function registerSubAgentCommands(program3) {
           `/api/agent/${encodeURIComponent(agentId)}/subagent`
         );
       } else {
-        let path20 = "/api/subagent";
+        let path24 = "/api/subagent";
         if (opts.scope) {
-          path20 += `?scope=${encodeURIComponent(opts.scope)}`;
+          path24 += `?scope=${encodeURIComponent(opts.scope)}`;
         }
-        body = await getClient().get(path20);
+        body = await getClient().get(path24);
       }
       if (opts.human) {
         if (body.subAgents.length === 0) {
@@ -45190,12 +45344,12 @@ function registerSubAgentCommands(program3) {
   subAgentCmd.command("show <name>").description("Show sub-agent definition and content").option("-a, --agent <name>", "Scope to a specific agent").option("-H, --human", "Human-readable output (default: JSON)").action(async (name, opts) => {
     try {
       await getClient().requireRunning();
-      let path20 = `/api/subagent/${encodeURIComponent(name)}`;
+      let path24 = `/api/subagent/${encodeURIComponent(name)}`;
       if (opts.agent) {
         const agentId = await resolveAgentId(opts.agent);
-        path20 += `?agentName=${encodeURIComponent(agentId)}`;
+        path24 += `?agentName=${encodeURIComponent(agentId)}`;
       }
-      const body = await getClient().get(path20);
+      const body = await getClient().get(path24);
       if (opts.human) {
         printTable([
           ["Name:", body.name],
@@ -45283,7 +45437,7 @@ function registerSubAgentCommands(program3) {
 }
 
 // ../../packages/cli/src/commands/test-smoke.ts
-import { spawn as spawn3, execFileSync as execFileSync6 } from "node:child_process";
+import { spawn as spawn3, execFile, execFileSync as execFileSync6 } from "node:child_process";
 import {
   mkdirSync as mkdirSync5,
   mkdtempSync,
@@ -45291,7 +45445,7 @@ import {
   chmodSync,
   unlinkSync as unlinkSync2,
   rmSync,
-  existsSync as existsSync7,
+  existsSync as existsSync8,
   copyFileSync,
   openSync as openSync3,
   closeSync as closeSync2
@@ -45299,22 +45453,109 @@ import {
 import path15 from "node:path";
 import os8 from "node:os";
 import net2 from "node:net";
+import { createServer } from "node:http";
 init_dist();
 init_ensure_daemon();
+function withResolversCompat() {
+  const promiseWithResolvers = Promise.withResolvers;
+  if (typeof promiseWithResolvers === "function") {
+    return promiseWithResolvers.call(Promise);
+  }
+  let resolve2;
+  let reject;
+  const promise = new Promise((innerResolve, innerReject) => {
+    resolve2 = innerResolve;
+    reject = innerReject;
+  });
+  return { promise, resolve: resolve2, reject };
+}
+function delay(ms) {
+  const { promise, resolve: resolve2 } = withResolversCompat();
+  setTimeout(resolve2, ms);
+  return promise;
+}
+function execFileText(command, args, timeoutMs = 3e3) {
+  const { promise, resolve: resolve2 } = withResolversCompat();
+  execFile(command, args, { encoding: "utf-8", timeout: timeoutMs }, (_err, stdout) => {
+    resolve2(typeof stdout === "string" ? stdout : "");
+  });
+  return promise;
+}
+async function getChildPids(pid) {
+  if (process.platform === "win32") {
+    const stdout2 = await execFileText("wmic", [
+      "process",
+      "where",
+      `(ParentProcessId=${String(pid)})`,
+      "get",
+      "ProcessId",
+      "/value"
+    ]);
+    return [...stdout2.matchAll(/ProcessId=(\d+)/gi)].map((match) => Number(match[1])).filter((childPid) => Number.isFinite(childPid) && childPid > 0);
+  }
+  const stdout = await execFileText("pgrep", ["-P", String(pid)]);
+  return stdout.trim().split("\n").map((line) => Number(line)).filter((childPid) => Number.isFinite(childPid) && childPid > 0);
+}
+async function collectProcessTree(pid) {
+  const visited = /* @__PURE__ */ new Set();
+  const queue = [pid];
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (visited.has(current)) continue;
+    visited.add(current);
+    queue.push(...await getChildPids(current));
+  }
+  return [...visited];
+}
+function isPidRunning2(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function isChildProcessRunning(proc) {
+  return proc.pid != null && proc.exitCode === null && proc.signalCode === null;
+}
+async function terminateProcessTree(pid, signal = "SIGTERM") {
+  if (process.platform === "win32") {
+    await execFileText("taskkill", ["/T", "/F", "/PID", String(pid)], 5e3);
+    return;
+  }
+  const pids = await collectProcessTree(pid);
+  for (const childPid of [...pids].reverse()) {
+    try {
+      process.kill(childPid, signal);
+    } catch {
+    }
+  }
+  const deadline = Date.now() + 1e4;
+  while (Date.now() < deadline) {
+    if (pids.every((childPid) => !isPidRunning2(childPid))) return;
+    await delay(200);
+  }
+  for (const childPid of [...pids].reverse()) {
+    try {
+      process.kill(childPid, "SIGKILL");
+    } catch {
+    }
+  }
+}
 async function waitForPort(port, timeoutMs = 6e4) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     try {
-      await new Promise((resolve2, reject) => {
-        const sock = net2.createConnection({ port, host: "127.0.0.1" }, () => {
-          sock.destroy();
-          resolve2();
-        });
-        sock.on("error", reject);
+      const { promise, resolve: resolve2, reject } = withResolversCompat();
+      const sock = net2.createConnection({ port, host: "127.0.0.1" }, () => {
+        sock.destroy();
+        resolve2();
       });
+      sock.on("error", reject);
+      await promise;
       return true;
     } catch {
-      await new Promise((r) => setTimeout(r, 1e3));
+      await delay(1e3);
     }
   }
   return false;
@@ -45346,7 +45587,7 @@ async function startDaemon(dataDir, port) {
   mkdirSync5(logDir, { recursive: true });
   const shimDir = seedMavisShim(dataDir);
   const mainConfigPath = path15.join(os8.homedir(), ".mavis", "config.yaml");
-  if (existsSync7(mainConfigPath)) {
+  if (existsSync8(mainConfigPath)) {
     copyFileSync(mainConfigPath, path15.join(dataDir, "config.yaml"));
   }
   const spawnLogPath = path15.join(logDir, "daemon-spawn.log");
@@ -45358,7 +45599,8 @@ async function startDaemon(dataDir, port) {
       ...process.env,
       PATH: `${shimDir}:${process.env.PATH ?? ""}`,
       NODE_ENV: "production",
-      // Disable git-based port detection so explicit args take effect.
+      // Keep daemon smoke runs out of the caller's repository profile. Without
+      // this, git auto-config can derive branch profiles and drift ports/data dirs.
       GIT_DIR: "/dev/null"
     },
     detached: false
@@ -45367,17 +45609,115 @@ async function startDaemon(dataDir, port) {
   const pid = proc.pid;
   const ready = await waitForPort(port);
   if (!ready) {
-    proc.kill("SIGKILL");
+    if (isChildProcessRunning(proc)) await terminateProcessTree(pid, "SIGKILL");
     throw new Error(`Daemon (pid=${pid}) failed to start on port ${port} within timeout`);
   }
-  await new Promise((r) => setTimeout(r, 2e3));
+  await delay(2e3);
   return { proc, pid, port, dataDir };
 }
 function killDaemon(handle, signal = "SIGTERM") {
-  return new Promise((resolve2) => {
-    handle.proc.once("exit", (code) => resolve2(code));
-    handle.proc.kill(signal);
-    setTimeout(() => resolve2(null), 1e4);
+  const { promise, resolve: resolve2 } = withResolversCompat();
+  if (!isChildProcessRunning(handle.proc)) {
+    resolve2(handle.proc.exitCode);
+    return promise;
+  }
+  handle.proc.once("exit", (code) => resolve2(code));
+  if (!isChildProcessRunning(handle.proc)) {
+    resolve2(handle.proc.exitCode);
+  } else {
+    terminateProcessTree(handle.pid, signal).catch(() => {
+      if (isChildProcessRunning(handle.proc)) handle.proc.kill(signal);
+    });
+  }
+  setTimeout(() => {
+    resolve2(isChildProcessRunning(handle.proc) ? null : handle.proc.exitCode);
+  }, 1e4);
+  return promise;
+}
+function closeHealthServer(server) {
+  const { promise, resolve: resolve2, reject } = withResolversCompat();
+  server.close((err) => {
+    if (err) reject(err);
+    else resolve2();
+  });
+  return promise;
+}
+async function startHealthServer() {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const requests = [];
+    const server = createServer((req, res) => {
+      const requestPath = req.url ?? "";
+      requests.push(requestPath);
+      if (requestPath === "/mavis/health" || requestPath === "/health") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ status: "ok", version: "smoke" }));
+        return;
+      }
+      res.writeHead(404, { "Content-Type": "text/plain" });
+      res.end("not found");
+    });
+    const { promise, resolve: resolve2, reject } = withResolversCompat();
+    const onError = (err) => reject(err);
+    server.once("error", onError);
+    server.listen(0, "127.0.0.1", () => {
+      server.off("error", onError);
+      const address = server.address();
+      if (typeof address === "object" && address !== null) {
+        resolve2(address.port);
+        return;
+      }
+      reject(new Error("Health server did not expose a TCP port"));
+    });
+    const port = await promise;
+    if (port !== 5321) {
+      return { server, port, requests };
+    }
+    await closeHealthServer(server);
+  }
+  throw new Error("Could not allocate a non-5321 health server port");
+}
+function runNodeCli(entry, args, options) {
+  const { promise, resolve: resolve2, reject } = withResolversCompat();
+  const proc = spawn3(process.execPath, [entry, ...args], {
+    cwd: options.cwd,
+    env: options.env,
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  let stdout = "";
+  let stderr = "";
+  let timedOut = false;
+  let settled = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    proc.kill("SIGKILL");
+  }, options.timeoutMs);
+  const finish = (value, isError = false) => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timer);
+    if (isError) {
+      reject(value);
+      return;
+    }
+    resolve2(value);
+  };
+  proc.stdout?.on("data", (chunk) => {
+    stdout += chunk.toString();
+  });
+  proc.stderr?.on("data", (chunk) => {
+    stderr += chunk.toString();
+  });
+  proc.once("error", (err) => finish(err, true));
+  proc.once("close", (code) => finish({ stdout, stderr, code, timedOut }));
+  return promise;
+}
+function buildIsolatedCliEnv(homeDir, options = {}) {
+  return buildChildEnv("spawn-daemon", {
+    HOME: homeDir,
+    USERPROFILE: homeDir,
+    ELECTRON_RUN_AS_NODE: process.env.ELECTRON_RUN_AS_NODE,
+    __MAVIS_ALLOW_LEGACY_RUNTIME_ENV: "1",
+    __MAVIS_RUNTIME_DISABLE_GIT_AUTO_CONFIG: options.disableGitAuto === false ? void 0 : "1"
   });
 }
 async function testBasicChat(dataDir) {
@@ -45389,18 +45729,20 @@ async function testBasicChat(dataDir) {
     const baseUrl = `http://127.0.0.1:${port}`;
     const apiBase = `${baseUrl}/mavis`;
     const agentsRes = await fetch(`${apiBase}/api/agent`);
-    if (!agentsRes.ok)
+    if (!agentsRes.ok) {
       return { name, status: "FAIL", detail: `GET /api/agent failed: ${agentsRes.status}` };
+    }
     const agents = await agentsRes.json();
     if (agents.length === 0) return { name, status: "FAIL", detail: "No agents found" };
     const primaryAgent = agents.find((a) => isPrimaryAgentName(a.name)) ?? agents[0];
     const rootSessionRes = await fetch(`${apiBase}/api/agent/${primaryAgent.name}/session/root`);
-    if (!rootSessionRes.ok)
+    if (!rootSessionRes.ok) {
       return {
         name,
         status: "FAIL",
         detail: `GET /api/agent/${primaryAgent.name}/session/root failed: ${rootSessionRes.status}`
       };
+    }
     const rootSessionData = await rootSessionRes.json();
     const { sessionId } = rootSessionData.session;
     const msgRes = await fetch(`${apiBase}/api/session/${sessionId}/message`, {
@@ -45458,11 +45800,241 @@ async function testBasicChat(dataDir) {
   } catch (err) {
     return { name, status: "FAIL", detail: err.message };
   } finally {
-    if (handle?.proc.exitCode === null) handle?.proc.kill("SIGKILL");
+    if (handle && isChildProcessRunning(handle.proc)) {
+      await terminateProcessTree(handle.pid, "SIGKILL");
+    }
+  }
+}
+async function testElectronAttachedRootAction(dataDir) {
+  const name = "Electron attached root action uses daemon.port";
+  const homeDir = path15.join(dataDir, "home");
+  const defaultDataDir = path15.join(homeDir, BRAND.APP_DIR);
+  mkdirSync5(defaultDataDir, { recursive: true });
+  const health = await startHealthServer();
+  try {
+    writeFileSync5(
+      path15.join(defaultDataDir, "daemon.pid"),
+      JSON.stringify({ pid: process.pid, owner: "electron" }),
+      "utf-8"
+    );
+    writeFileSync5(path15.join(defaultDataDir, "daemon.port"), `${String(health.port)}
+`, "utf-8");
+    const cliEntry = process.argv[1];
+    if (!cliEntry) {
+      throw new Error("Could not resolve the current CLI entry point for root-action smoke");
+    }
+    const run = await runNodeCli(path15.resolve(cliEntry), ["--no-web", "--no-service"], {
+      cwd: homeDir,
+      timeoutMs: 15e3,
+      env: buildIsolatedCliEnv(homeDir)
+    });
+    const output = `${run.stdout}${run.stderr}`;
+    if (run.code !== 0) {
+      return {
+        name,
+        status: "FAIL",
+        detail: `CLI exited ${String(run.code)}${run.timedOut ? " after timeout" : ""}: ${output.slice(0, 360)}`
+      };
+    }
+    if (!health.requests.includes("/mavis/health")) {
+      return { name, status: "FAIL", detail: "CLI did not probe the Electron health URL" };
+    }
+    if (!output.includes(`port: ${String(health.port)}`)) {
+      return {
+        name,
+        status: "FAIL",
+        detail: `CLI output did not use Electron port ${String(health.port)}: ${output.slice(0, 240)}`
+      };
+    }
+    if (/\b5321\b/.test(output)) {
+      return { name, status: "FAIL", detail: `CLI output still mentioned 5321: ${output}` };
+    }
+    return {
+      name,
+      status: "PASS",
+      detail: `Root action used Electron port ${String(health.port)}`
+    };
+  } catch (err) {
+    return { name, status: "FAIL", detail: err.message };
+  } finally {
+    await closeHealthServer(health.server);
+  }
+}
+async function testExplicitPortRootAction(dataDir) {
+  const name = "Explicit --port root action overrides daemon.port";
+  const homeDir = path15.join(dataDir, "explicit-port-home");
+  const currentProfile = getProfile();
+  const currentDataDir = currentProfile ? path15.join(homeDir, `${BRAND.APP_DIR}-${currentProfile}`) : path15.join(homeDir, BRAND.APP_DIR);
+  mkdirSync5(currentDataDir, { recursive: true });
+  const staleHealth = await startHealthServer();
+  const explicitHealth = await startHealthServer();
+  try {
+    writeFileSync5(
+      path15.join(currentDataDir, "daemon.pid"),
+      JSON.stringify({ pid: process.pid, owner: "cli" }),
+      "utf-8"
+    );
+    writeFileSync5(
+      path15.join(currentDataDir, "daemon.port"),
+      `${String(staleHealth.port)}
+`,
+      "utf-8"
+    );
+    const cliEntry = process.argv[1];
+    if (!cliEntry) {
+      throw new Error("Could not resolve the current CLI entry point for explicit-port smoke");
+    }
+    const run = await runNodeCli(
+      path15.resolve(cliEntry),
+      ["--port", String(explicitHealth.port), "--no-web", "--no-service"],
+      {
+        cwd: process.cwd(),
+        timeoutMs: 15e3,
+        env: buildIsolatedCliEnv(homeDir, { disableGitAuto: false })
+      }
+    );
+    const output = `${run.stdout}${run.stderr}`;
+    if (run.code !== 0) {
+      return {
+        name,
+        status: "FAIL",
+        detail: `CLI exited ${String(run.code)}${run.timedOut ? " after timeout" : ""}: ${output.slice(0, 360)}`
+      };
+    }
+    if (!explicitHealth.requests.includes("/mavis/health")) {
+      return { name, status: "FAIL", detail: "CLI did not probe the explicit --port health URL" };
+    }
+    if (staleHealth.requests.length > 0) {
+      return {
+        name,
+        status: "FAIL",
+        detail: `CLI probed stale daemon.port requests: ${staleHealth.requests.join(", ")}`
+      };
+    }
+    if (!output.includes(`port: ${String(explicitHealth.port)}`)) {
+      return {
+        name,
+        status: "FAIL",
+        detail: `CLI output did not use explicit port ${String(explicitHealth.port)}: ${output.slice(0, 240)}`
+      };
+    }
+    return {
+      name,
+      status: "PASS",
+      detail: `Root action used explicit port ${String(explicitHealth.port)}`
+    };
+  } catch (err) {
+    return { name, status: "FAIL", detail: err.message };
+  } finally {
+    await closeHealthServer(staleHealth.server);
+    await closeHealthServer(explicitHealth.server);
+  }
+}
+async function testVersionCommandUsesMavisHealth(dataDir) {
+  const name = "Version command probes selected port via /mavis/health";
+  const homeDir = path15.join(dataDir, "electron-home");
+  const defaultDataDir = path15.join(homeDir, BRAND.APP_DIR);
+  mkdirSync5(defaultDataDir, { recursive: true });
+  const staleHealth = await startHealthServer();
+  const electronHealth = await startHealthServer();
+  const explicitHealth = await startHealthServer();
+  try {
+    writeFileSync5(
+      path15.join(defaultDataDir, "daemon.pid"),
+      JSON.stringify({ pid: process.pid, owner: "electron" }),
+      "utf-8"
+    );
+    writeFileSync5(
+      path15.join(defaultDataDir, "daemon.port"),
+      `${String(electronHealth.port)}
+`,
+      "utf-8"
+    );
+    const cliEntry = process.argv[1];
+    if (!cliEntry) {
+      throw new Error("Could not resolve the current CLI entry point for version smoke");
+    }
+    const electronRun = await runNodeCli(path15.resolve(cliEntry), ["version"], {
+      cwd: homeDir,
+      timeoutMs: 15e3,
+      env: buildIsolatedCliEnv(homeDir)
+    });
+    const electronOutput = `${electronRun.stdout}${electronRun.stderr}`;
+    if (electronRun.code !== 0) {
+      return {
+        name,
+        status: "FAIL",
+        detail: `Electron version exited ${String(electronRun.code)}${electronRun.timedOut ? " after timeout" : ""}: ${electronOutput.slice(0, 360)}`
+      };
+    }
+    if (!electronHealth.requests.includes("/mavis/health")) {
+      return { name, status: "FAIL", detail: "Electron version did not probe /mavis/health" };
+    }
+    if (electronHealth.requests.includes("/health")) {
+      return { name, status: "FAIL", detail: "Electron version probed bare /health" };
+    }
+    const explicitHomeDir = path15.join(dataDir, "explicit-home");
+    const explicitDataDir = path15.join(explicitHomeDir, BRAND.APP_DIR);
+    mkdirSync5(explicitDataDir, { recursive: true });
+    writeFileSync5(
+      path15.join(explicitDataDir, "daemon.pid"),
+      JSON.stringify({ pid: process.pid, owner: "cli" }),
+      "utf-8"
+    );
+    writeFileSync5(
+      path15.join(explicitDataDir, "daemon.port"),
+      `${String(staleHealth.port)}
+`,
+      "utf-8"
+    );
+    const explicitRun = await runNodeCli(
+      path15.resolve(cliEntry),
+      ["--port", String(explicitHealth.port), "version"],
+      {
+        cwd: process.cwd(),
+        timeoutMs: 15e3,
+        env: buildIsolatedCliEnv(explicitHomeDir, { disableGitAuto: false })
+      }
+    );
+    const explicitOutput = `${explicitRun.stdout}${explicitRun.stderr}`;
+    if (explicitRun.code !== 0) {
+      return {
+        name,
+        status: "FAIL",
+        detail: `Explicit-port version exited ${String(explicitRun.code)}${explicitRun.timedOut ? " after timeout" : ""}: ${explicitOutput.slice(0, 360)}`
+      };
+    }
+    if (!explicitHealth.requests.includes("/mavis/health")) {
+      return { name, status: "FAIL", detail: "Explicit-port version did not probe /mavis/health" };
+    }
+    if (explicitHealth.requests.includes("/health")) {
+      return { name, status: "FAIL", detail: "Explicit-port version probed bare /health" };
+    }
+    if (staleHealth.requests.length > 0) {
+      return {
+        name,
+        status: "FAIL",
+        detail: `Version probed stale daemon.port requests: ${staleHealth.requests.join(", ")}`
+      };
+    }
+    return {
+      name,
+      status: "PASS",
+      detail: "Version command used selected ports via /mavis/health"
+    };
+  } catch (err) {
+    return { name, status: "FAIL", detail: err.message };
+  } finally {
+    await closeHealthServer(staleHealth.server);
+    await closeHealthServer(electronHealth.server);
+    await closeHealthServer(explicitHealth.server);
   }
 }
 var SCENARIOS = {
-  "basic-chat": testBasicChat
+  "basic-chat": testBasicChat,
+  "electron-attached-root-action": testElectronAttachedRootAction,
+  "explicit-port-root-action": testExplicitPortRootAction,
+  "version-mavis-health": testVersionCommandUsesMavisHealth
 };
 function pickSmokeBaseDir() {
   if (process.platform === "win32") {
@@ -45535,12 +46107,18 @@ function registerTestCommands(program3) {
 
 // ../../packages/cli/src/commands/web.ts
 init_dist();
-import { exec } from "node:child_process";
+import { spawn as spawn4 } from "node:child_process";
 init_attached_mode();
 init_format();
 function openBrowser(url) {
-  const cmd = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
-  exec(`${cmd} ${url}`);
+  const child = process.platform === "win32" ? spawn4("cmd.exe", ["/c", "start", "", url], { detached: true, stdio: "ignore" }) : spawn4(process.platform === "darwin" ? "open" : "xdg-open", [url], {
+    detached: true,
+    stdio: "ignore"
+  });
+  child.on("error", (err) => {
+    printError(`Failed to open browser: ${err.message}`);
+  });
+  child.unref();
 }
 function registerWebCommand(program3) {
   program3.command("web").description("Open the Mavis web UI in your default browser").action(async () => {
@@ -45561,7 +46139,7 @@ init_source();
 init_format();
 function registerExternalEngineCommands(program3) {
   const engineCmd = program3.command("external-engine").description("Manage external coding agent engines");
-  engineCmd.command("status").description("Show installation status of opencode, claude, and codex CLI engines").option("-H, --human", "Human-readable output (default: JSON)").action(async (opts) => {
+  engineCmd.command("status").description("Show installation status of the opencode CLI engine").option("-H, --human", "Human-readable output (default: JSON)").action(async (opts) => {
     try {
       await getClient().requireRunning();
       const data = await getClient().get(
@@ -45979,7 +46557,7 @@ ${h.body}
 init_dist();
 init_source();
 import {
-  existsSync as existsSync8,
+  existsSync as existsSync9,
   mkdirSync as mkdirSync6,
   writeFileSync as writeFileSync6,
   copyFileSync as copyFileSync2,
@@ -46111,6 +46689,10 @@ function getWindowsRegistryEntries(hostName) {
 var MAX_SELF_REMINDER_TTL_SECONDS = 30 * 86400;
 var DEFAULT_SELF_REMINDER_TTL_SECONDS = 14 * 86400;
 
+// ../../packages/shared/dist/opencode-bash.js
+var OPENCODE_BASH_DEFAULT_TIMEOUT_MS = 18e4;
+var OPENCODE_BASH_DEFAULT_TIMEOUT_SECONDS = OPENCODE_BASH_DEFAULT_TIMEOUT_MS / 1e3;
+
 // ../../packages/cli/src/commands/browser/install.ts
 function ensureDir(p) {
   mkdirSync6(p, { recursive: true });
@@ -46154,7 +46736,7 @@ function findNativeHostCjs(dataDirOverride, hereOverride) {
     path17.join(dataDir, "browser", "native-host.cjs")
   ];
   for (const candidate of candidates) {
-    if (existsSync8(candidate)) return candidate;
+    if (existsSync9(candidate)) return candidate;
   }
   throw new Error(
     `Cannot find native-host.cjs. Expected at:
@@ -46181,7 +46763,7 @@ async function installAction(options) {
   console.log(source_default.green(`  \u2713 Native host: ${nativeHostCjs}`));
   const extensionSrcDir = options.extensionDir ?? path17.resolve(path17.dirname(nativeHostCjs), "..", "extension");
   const extensionDstDir = path17.join(dataDir, "browser-extension");
-  if (existsSync8(extensionSrcDir)) {
+  if (existsSync9(extensionSrcDir)) {
     copyDirRecursive(extensionSrcDir, extensionDstDir);
     console.log(source_default.green(`  \u2713 Extension copied to: ${extensionDstDir}`));
   } else {
@@ -46189,14 +46771,14 @@ async function installAction(options) {
     console.log(source_default.yellow(`    You'll need to load the extension manually.`));
   }
   console.log(source_default.green(`  \u2713 Extension ID (fixed): ${MAVIS_BROWSER_EXTENSION_ID}`));
-  const nodePath = resolveNodePath();
+  const nodePath2 = resolveNodePath();
   const brokerSocketPath = process.platform === "win32" ? `\\\\.\\pipe\\mavis-${profile}-browser` : path17.join(dataDir, "browser-broker.sock");
   const wrapperDir = path17.join(dataDir, "browser");
   ensureDir(wrapperDir);
   const wrapperExt = process.platform === "win32" ? "host-wrapper.cmd" : "host-wrapper.sh";
   const wrapperPath = path17.join(wrapperDir, wrapperExt);
   const wrapperContent = generateHostWrapper({
-    nodePath,
+    nodePath: nodePath2,
     nativeHostCjsPath: nativeHostCjs,
     profile,
     brokerSocketPath
@@ -46249,7 +46831,7 @@ async function installAction(options) {
     nativeHostCjsPath: nativeHostCjs,
     brokerSocketPath,
     installedAt: Date.now(),
-    nodePath
+    nodePath: nodePath2
   };
   writeFileSync6(browserConfigPath, `${JSON.stringify(browserConfig, null, 2)}
 `);
@@ -46262,7 +46844,7 @@ ${source_default.cyan.bold("Installation complete!")}
 
   ${source_default.bold("Load the extension into Chrome (3 steps):")}
   1. Open ${source_default.cyan("chrome://extensions")} and enable ${source_default.bold("Developer mode")}
-  2. Drag the folder ${source_default.cyan(existsSync8(extensionDstDir) ? extensionDstDir : "<your extension directory>")} into Chrome
+  2. Drag the folder ${source_default.cyan(existsSync9(extensionDstDir) ? extensionDstDir : "<your extension directory>")} into Chrome
   3. Done \u2014 verify the loaded extension's ID equals ${source_default.bold(MAVIS_BROWSER_EXTENSION_ID)}
 
   ${source_default.bold("Migrating from an earlier Mavis?")} Remove the old "Mavis Browser Bridge"
@@ -46283,7 +46865,7 @@ function registerBrowserInstallCommand(browser) {
 // ../../packages/cli/src/commands/browser/status.ts
 init_dist();
 init_source();
-import { existsSync as existsSync9 } from "node:fs";
+import { existsSync as existsSync10 } from "node:fs";
 
 // ../../packages/cli/src/commands/browser/broker-client.ts
 import net3 from "node:net";
@@ -46441,7 +47023,7 @@ async function statusAction() {
   console.log(source_default.cyan(`  Profile: ${profile}`));
   console.log(source_default.cyan(`  Socket:  ${socketPath}
 `));
-  if (!existsSync9(socketPath)) {
+  if (!existsSync10(socketPath)) {
     console.log(source_default.yellow("  Broker is not running (socket file not found)."));
     console.log(source_default.yellow("  Start the daemon with: mavis start"));
     return;
@@ -46513,7 +47095,7 @@ function registerBrowserStatusCommand(browser) {
 // ../../packages/cli/src/commands/browser/uninstall.ts
 init_dist();
 init_source();
-import { existsSync as existsSync10, unlinkSync as unlinkSync3 } from "node:fs";
+import { existsSync as existsSync11, unlinkSync as unlinkSync3 } from "node:fs";
 import path18 from "node:path";
 async function uninstallAction() {
   const config = getConfig();
@@ -46526,7 +47108,7 @@ async function uninstallAction() {
   const hostDirs = getNativeHostDirs();
   for (const { browser, dir } of hostDirs) {
     const manifestPath = getManifestPath(dir, profile);
-    if (existsSync10(manifestPath)) {
+    if (existsSync11(manifestPath)) {
       try {
         unlinkSync3(manifestPath);
         console.log(source_default.green(`  Removed manifest (${browser}): ${manifestPath}`));
@@ -46542,7 +47124,7 @@ async function uninstallAction() {
   const wrapperSh = path18.join(wrapperDir, "host-wrapper.sh");
   const wrapperCmd = path18.join(wrapperDir, "host-wrapper.cmd");
   for (const wrapperPath of [wrapperSh, wrapperCmd]) {
-    if (existsSync10(wrapperPath)) {
+    if (existsSync11(wrapperPath)) {
       try {
         unlinkSync3(wrapperPath);
         console.log(source_default.green(`  Removed host wrapper: ${wrapperPath}`));
@@ -46553,7 +47135,7 @@ async function uninstallAction() {
     }
   }
   const browserConfigPath = path18.join(dataDir, "browser-config.json");
-  if (existsSync10(browserConfigPath)) {
+  if (existsSync11(browserConfigPath)) {
     try {
       unlinkSync3(browserConfigPath);
       console.log(source_default.green(`  Removed config: ${browserConfigPath}`));
@@ -46583,7 +47165,7 @@ function registerBrowserUninstallCommand(browser) {
 // ../../packages/cli/src/commands/browser/tools.ts
 init_dist();
 init_source();
-import { existsSync as existsSync11 } from "node:fs";
+import { existsSync as existsSync12 } from "node:fs";
 var BROWSER_TOOLS = [
   // Tab management (no tab required)
   { name: "get_active_tab", description: "Get the currently-active tab's id, url, and title" },
@@ -46634,7 +47216,7 @@ async function toolsAction() {
   const socketPath = getBrokerSocketPath(config.dataDir);
   let tools = BROWSER_TOOLS;
   let fromBroker = false;
-  if (existsSync11(socketPath)) {
+  if (existsSync12(socketPath)) {
     const client = new BrokerClient(socketPath);
     try {
       await client.connect(2e3);
@@ -46675,7 +47257,7 @@ function registerBrowserToolsCommand(browser) {
 
 // ../../packages/cli/src/commands/browser/tool.ts
 init_dist();
-import { existsSync as existsSync12 } from "node:fs";
+import { existsSync as existsSync13 } from "node:fs";
 async function toolAction(name, argsJson) {
   const config = getConfig();
   const profile = getProfile() ?? "default";
@@ -46694,7 +47276,7 @@ async function toolAction(name, argsJson) {
       return;
     }
   }
-  if (!existsSync12(socketPath)) {
+  if (!existsSync13(socketPath)) {
     process.stderr.write(
       `${JSON.stringify({
         error: "Broker socket not found. Start the daemon with: mavis start"
@@ -46839,20 +47421,2130 @@ function registerInternalSkillCommands(program3) {
   }
 }
 
+// ../../packages/cli/src/commands/perf.ts
+init_js_yaml();
+init_dist();
+import fs10 from "node:fs";
+import path21 from "node:path";
+init_format();
+init_datetime();
+
+// ../../packages/cli/src/commands/perf-report-view.ts
+init_dist();
+init_datetime();
+import fs8 from "node:fs";
+import path19 from "node:path";
+function defaultPerfRunsDir() {
+  return path19.join(getConfig().dataDir, "perf", "runs");
+}
+function createPerfRunId(now = Date.now()) {
+  return `perf-${formatFileTimestamp(now)}`;
+}
+function resolvePerfRunOutputPath(out, runId) {
+  const raw = out?.trim();
+  if (!raw) return path19.join(defaultPerfRunsDir(), `${runId}.json`);
+  const resolved = path19.resolve(raw);
+  if (resolved.endsWith(".json")) return resolved;
+  return path19.join(resolved, `${runId}.json`);
+}
+function writePerfRunFile(filePath, run) {
+  fs8.mkdirSync(path19.dirname(filePath), { recursive: true });
+  fs8.writeFileSync(filePath, `${JSON.stringify(run, null, 2)}
+`, "utf-8");
+}
+function frameName(frame) {
+  const name = frame?.functionName?.trim();
+  return name || "(anonymous)";
+}
+function normalizedFrame(frame) {
+  return {
+    name: frameName(frame),
+    ...frame?.url ? { file: frame.url } : {},
+    ...typeof frame?.lineNumber === "number" && frame.lineNumber >= 0 ? { line: frame.lineNumber + 1 } : {},
+    ...typeof frame?.columnNumber === "number" && frame.columnNumber >= 0 ? { col: frame.columnNumber + 1 } : {}
+  };
+}
+function frameKey(frame) {
+  return [frame.name, frame.file ?? "", frame.line ?? "", frame.col ?? ""].join("	");
+}
+function createFrameInterner(frames) {
+  const indexByKey = /* @__PURE__ */ new Map();
+  return (rawFrame) => {
+    const frame = normalizedFrame(rawFrame);
+    const key = frameKey(frame);
+    const existing = indexByKey.get(key);
+    if (existing !== void 0) return existing;
+    const index = frames.length;
+    frames.push(frame);
+    indexByKey.set(key, index);
+    return index;
+  };
+}
+function profileName(capture, index, suffix) {
+  const processName = capture.process ?? `profile-${String(index + 1)}`;
+  const pid = capture.pid ? ` pid ${String(capture.pid)}` : "";
+  const webContents = capture.webContentsId ? ` wc ${String(capture.webContentsId)}` : "";
+  return `${processName}${pid}${webContents} ${suffix}`;
+}
+function cpuStackForNode(nodeId, nodesById, parentById, internFrame) {
+  const stack = [];
+  let cursor = nodesById.get(nodeId);
+  let guard = 0;
+  while (cursor && guard <= nodesById.size) {
+    stack.push(internFrame(cursor.callFrame));
+    const parentId = parentById.get(cursor.id);
+    cursor = parentId === void 0 ? void 0 : nodesById.get(parentId);
+    guard += 1;
+  }
+  return stack.reverse();
+}
+function cpuProfileToSpeedscope(profile, name, internFrame) {
+  const nodes = profile.nodes ?? [];
+  if (nodes.length === 0) return null;
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+  const parentById = /* @__PURE__ */ new Map();
+  nodes.forEach((node) => {
+    (node.children ?? []).forEach((childId) => parentById.set(childId, node.id));
+  });
+  const samples = [];
+  const weights = [];
+  const rawSamples = profile.samples ?? [];
+  const rawDeltas = profile.timeDeltas ?? [];
+  const hasDeltas = rawSamples.length > 0 && rawDeltas.length >= rawSamples.length;
+  if (rawSamples.length > 0) {
+    rawSamples.forEach((sampleId, index) => {
+      const stack = cpuStackForNode(sampleId, nodesById, parentById, internFrame);
+      if (stack.length === 0) return;
+      samples.push(stack);
+      weights.push(hasDeltas ? Math.max(1, rawDeltas[index] ?? 1) : 1);
+    });
+  } else {
+    nodes.forEach((node) => {
+      const hitCount = node.hitCount ?? 0;
+      if (hitCount <= 0) return;
+      const stack = cpuStackForNode(node.id, nodesById, parentById, internFrame);
+      if (stack.length === 0) return;
+      samples.push(stack);
+      weights.push(hitCount);
+    });
+  }
+  if (samples.length === 0) return null;
+  const endValue = weights.reduce((sum, weight) => sum + weight, 0);
+  return {
+    type: "sampled",
+    name,
+    unit: hasDeltas ? "microseconds" : "none",
+    startValue: 0,
+    endValue,
+    samples,
+    weights
+  };
+}
+function visitHeapNode(node, parentStack, samples, weights, internFrame) {
+  const stack = [...parentStack, internFrame(node.callFrame)];
+  const selfSize = node.selfSize ?? 0;
+  if (selfSize > 0) {
+    samples.push(stack);
+    weights.push(selfSize);
+  }
+  (node.children ?? []).forEach(
+    (child) => visitHeapNode(child, stack, samples, weights, internFrame)
+  );
+}
+function heapProfileToSpeedscope(profile, name, internFrame) {
+  if (!profile.head) return null;
+  const samples = [];
+  const weights = [];
+  visitHeapNode(profile.head, [], samples, weights, internFrame);
+  if (samples.length === 0) return null;
+  return {
+    type: "sampled",
+    name,
+    unit: "bytes",
+    startValue: 0,
+    endValue: weights.reduce((sum, weight) => sum + weight, 0),
+    samples,
+    weights
+  };
+}
+function buildCpuSpeedscopeFile(run) {
+  const frames = [];
+  const internFrame = createFrameInterner(frames);
+  const profiles = (run.profiles ?? []).flatMap((capture, index) => {
+    if (!capture.cpuProfile || capture.available === false) return [];
+    const profile = cpuProfileToSpeedscope(
+      capture.cpuProfile,
+      profileName(capture, index, "cpu"),
+      internFrame
+    );
+    return profile ? [profile] : [];
+  });
+  if (profiles.length === 0) return null;
+  return {
+    $schema: "https://www.speedscope.app/file-format-schema.json",
+    name: `${run.run.id} CPU profiles`,
+    exporter: "mavis perf",
+    activeProfileIndex: 0,
+    shared: { frames },
+    profiles
+  };
+}
+function buildHeapSpeedscopeFile(run) {
+  const frames = [];
+  const internFrame = createFrameInterner(frames);
+  const profiles = (run.profiles ?? []).flatMap((capture, index) => {
+    if (!capture.heapProfile || capture.available === false) return [];
+    const profile = heapProfileToSpeedscope(
+      capture.heapProfile,
+      profileName(capture, index, "heap"),
+      internFrame
+    );
+    return profile ? [profile] : [];
+  });
+  if (profiles.length === 0) return null;
+  return {
+    $schema: "https://www.speedscope.app/file-format-schema.json",
+    name: `${run.run.id} heap allocation profiles`,
+    exporter: "mavis perf",
+    activeProfileIndex: 0,
+    shared: { frames },
+    profiles
+  };
+}
+function stripProfilePayload(profile) {
+  const { cpuProfile, heapProfile, ...metadata } = profile;
+  return {
+    ...metadata,
+    hasCpuProfile: !!cpuProfile,
+    hasHeapProfile: !!heapProfile
+  };
+}
+function artifactByKind(artifacts, kind, process11) {
+  return artifacts.find(
+    (artifact) => artifact.kind === kind && (process11 === void 0 || artifact.process === process11)
+  );
+}
+function buildPerfBundleSummary(run, artifacts) {
+  const report = run.report ?? {};
+  return {
+    schemaVersion: 1,
+    generatedAt: Date.now(),
+    run: run.run,
+    samples: run.snapshots.length,
+    report: {
+      summary: report.summary,
+      roleSummaries: report.roleSummaries,
+      recommendations: report.recommendations
+    },
+    artifacts,
+    viewers: {
+      ...artifactByKind(artifacts, "speedscope", "cpu") ? { cpu: "Speedscope" } : {},
+      ...artifactByKind(artifacts, "speedscope", "heap") ? { heap: "Speedscope" } : {},
+      ...artifactByKind(artifacts, "trace") ? { trace: "Perfetto UI or Chrome DevTools Performance" } : {},
+      ...artifactByKind(artifacts, "netlog") ? { netlog: "Chromium NetLog Viewer" } : {}
+    }
+  };
+}
+function renderPerfBundleReadme(run, manifest) {
+  const artifacts = manifest.artifacts;
+  const cpuPath = artifactByKind(artifacts, "speedscope", "cpu")?.path;
+  const heapPath = artifactByKind(artifacts, "speedscope", "heap")?.path;
+  const tracePath = artifactByKind(artifacts, "trace")?.path;
+  const netLogPath = artifactByKind(artifacts, "netlog")?.path;
+  const rows = [
+    ["CPU flamegraph", cpuPath, "Speedscope tab in pnpm flame:view"],
+    ["Heap allocation flamegraph", heapPath, "Heap tab in pnpm flame:view"],
+    ["Chromium timeline", tracePath, "Trace tab in pnpm flame:view, powered by Perfetto UI"],
+    [
+      "Network metadata",
+      netLogPath,
+      "NetLog tab in pnpm flame:view, powered by Catapult NetLog Viewer"
+    ]
+  ].filter((row) => row[1]);
+  return [
+    "# Mavis Performance Bundle",
+    "",
+    `Run: ${run.run.id}`,
+    `Scenario: ${run.run.scenario ?? "n/a"}`,
+    `Captured: ${formatLocalDateTime(run.run.startedAt)} - ${formatLocalDateTime(run.run.endedAt)}`,
+    `Duration: ${String(run.run.durationMs)} ms`,
+    "",
+    "## Open",
+    "",
+    "- Unified local dashboard: `pnpm flame:view -- --input <bundle-dir>`",
+    ...rows.map((row) => `- ${row[0]}: \`${row[1]}\` (${row[2]})`),
+    "",
+    "## Privacy",
+    "",
+    "This bundle can contain source paths, function names, URLs, request metadata, and local process details.",
+    "Do not upload it to public viewers or share it outside trusted debugging channels.",
+    ""
+  ].join("\n");
+}
+
+// ../../packages/cli/src/commands/perf-trace-budget.ts
+var TRIGGER_METRICS = [
+  "cpu",
+  "mem",
+  "loopdelay",
+  "longtask",
+  "fps",
+  "frametime"
+];
+var TRIGGER_OPS = [">=", "<=", ">", "<"];
+function formatTraceTrigger(trigger) {
+  return `${trigger.metric}${trigger.op}${trigger.value}`;
+}
+function parseSingleTrigger(raw) {
+  const text = raw.trim();
+  if (!text) throw new Error("Empty trace trigger expression.");
+  const op = TRIGGER_OPS.find((candidate) => text.includes(candidate));
+  if (!op) {
+    throw new Error(`Invalid trace trigger "${raw}": expected an operator (>, >=, <, or <=).`);
+  }
+  const opIndex = text.indexOf(op);
+  const metricRaw = text.slice(0, opIndex).trim().toLowerCase();
+  const valueRaw = text.slice(opIndex + op.length).trim();
+  if (!TRIGGER_METRICS.includes(metricRaw)) {
+    throw new Error(
+      `Invalid trace trigger "${raw}": metric must be one of ${TRIGGER_METRICS.join(", ")}.`
+    );
+  }
+  const value = Number(valueRaw);
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error(`Invalid trace trigger "${raw}": value must be a non-negative number.`);
+  }
+  return { metric: metricRaw, op, value, raw: `${metricRaw}${op}${value}` };
+}
+function parseTraceTriggers(expr) {
+  const clauses = expr.split(",").map((part) => part.trim()).filter(Boolean);
+  if (clauses.length === 0) {
+    throw new Error("Trace trigger expression is empty.");
+  }
+  return clauses.map(parseSingleTrigger);
+}
+function evaluateTraceTriggers(triggers, metrics) {
+  for (const trigger of triggers) {
+    const observed = metrics[trigger.metric];
+    if (!Number.isFinite(observed)) continue;
+    const hit = evaluateOp(observed, trigger.op, trigger.value);
+    if (hit) return trigger;
+  }
+  return null;
+}
+function evaluateOp(observed, op, value) {
+  switch (op) {
+    case ">=":
+      return observed >= value;
+    case ">":
+      return observed > value;
+    case "<=":
+      return observed <= value;
+    case "<":
+      return observed < value;
+  }
+}
+function extractElectronTriggerMetrics(electron) {
+  const metrics = electron && typeof electron === "object" && Array.isArray(electron.metrics) ? electron.metrics : [];
+  let cpu = 0;
+  let memKb = 0;
+  for (const entry of metrics) {
+    const cpuField = entry?.cpu;
+    const pct = cpuField?.percentCPUUsage;
+    if (typeof pct === "number" && Number.isFinite(pct)) cpu += pct;
+    const memField = entry?.memory;
+    const ws = memField?.workingSetSize;
+    if (typeof ws === "number" && Number.isFinite(ws)) memKb += ws;
+  }
+  return { cpu, mem: memKb / 1024 };
+}
+function finiteOrNaN(value) {
+  return typeof value === "number" && Number.isFinite(value) ? value : Number.NaN;
+}
+function loopDelayWorstMs(...sources) {
+  let worst = Number.NaN;
+  for (const source of sources) {
+    if (!source || typeof source !== "object") continue;
+    for (const candidate of [finiteOrNaN(source.p99), finiteOrNaN(source.max)]) {
+      if (Number.isFinite(candidate)) {
+        worst = Number.isFinite(worst) ? Math.max(worst, candidate) : candidate;
+      }
+    }
+  }
+  return worst;
+}
+function extractWorstJank(electron) {
+  const worst = electron && typeof electron === "object" ? electron.jankWorst ?? null : null;
+  if (worst && typeof worst === "object") {
+    return {
+      longtask: finiteOrNaN(worst.longtaskMaxMs),
+      fps: finiteOrNaN(worst.fps),
+      frametime: finiteOrNaN(worst.frametimeP99Ms)
+    };
+  }
+  return { longtask: Number.NaN, fps: Number.NaN, frametime: Number.NaN };
+}
+function extractTraceTriggerMetrics(snapshot) {
+  const cpuMem = extractElectronTriggerMetrics(snapshot.electron ?? null);
+  const jank = extractWorstJank(snapshot.electron ?? null);
+  const daemonLoop = snapshot.loopDelayMs ?? snapshot.sample?.eventLoopDelay ?? null;
+  const electronLoop = snapshot.electron?.loopDelayMs ?? null;
+  return {
+    cpu: cpuMem.cpu,
+    mem: cpuMem.mem,
+    loopdelay: loopDelayWorstMs(daemonLoop, electronLoop),
+    longtask: jank.longtask,
+    fps: jank.fps,
+    frametime: jank.frametime
+  };
+}
+function isCooldownSatisfied(lastDumpAt, now, cooldownMs) {
+  if (lastDumpAt === null) return true;
+  return now - lastDumpAt >= cooldownMs;
+}
+var DEFAULT_DUMP_SIZE_RATIO = 4.5;
+var MAX_FILE_TO_BUFFER_RATIO = 6;
+var DEFAULT_PACE_HEADROOM = 0.1;
+var TraceBudgetController = class {
+  budgetBytes;
+  totalDurationMs;
+  cooldownMs;
+  headroom;
+  maxDumpBytes;
+  consumedBytes = 0;
+  estDumpBytes;
+  lastDumpAt = null;
+  dumpCount = 0;
+  constructor(options) {
+    this.budgetBytes = Math.max(0, options.budgetBytes);
+    this.totalDurationMs = Math.max(0, options.totalDurationMs);
+    this.cooldownMs = Math.max(0, options.cooldownMs);
+    this.headroom = clamp(options.headroom ?? DEFAULT_PACE_HEADROOM, 0, 1);
+    const ratio = options.dumpSizeRatio ?? DEFAULT_DUMP_SIZE_RATIO;
+    this.estDumpBytes = Math.max(1, Math.round(Math.max(0, options.bufferBytes) * ratio));
+    this.maxDumpBytes = Math.max(
+      1,
+      Math.ceil(Math.max(0, options.bufferBytes) * MAX_FILE_TO_BUFFER_RATIO)
+    );
+  }
+  get consumed() {
+    return this.consumedBytes;
+  }
+  get estimatedDumpBytes() {
+    return this.estDumpBytes;
+  }
+  /** Provable per-dump upper bound the hard-cap gate reserves before each flush. */
+  get maxDump() {
+    return this.maxDumpBytes;
+  }
+  get budget() {
+    return this.budgetBytes;
+  }
+  get dumps() {
+    return this.dumpCount;
+  }
+  /** Time-proportional bytes the run "should" have consumed by `elapsedMs`. */
+  allowanceAt(elapsedMs) {
+    if (this.totalDurationMs <= 0) return this.budgetBytes;
+    return this.budgetBytes * clamp(elapsedMs / this.totalDurationMs, 0, 1);
+  }
+  cooldownReady(now) {
+    return isCooldownSatisfied(this.lastDumpAt, now, this.cooldownMs);
+  }
+  /** Record a completed dump: grow `consumed` and roll the size estimate. */
+  recordDump(bytes, now) {
+    if (Number.isFinite(bytes) && bytes > 0) {
+      this.consumedBytes += bytes;
+      this.estDumpBytes = Math.max(1, Math.round(bytes));
+    }
+    this.lastDumpAt = now;
+    this.dumpCount += 1;
+  }
+  /**
+   * Decide whether to flush this poll. The budget gate reserves a *provable*
+   * per-dump upper bound (`maxDumpBytes`), not the rolling estimate, so as long
+   * as each real dump stays within that bound, `consumed <= budgetBytes` holds
+   * at all times even when an individual dump runs larger than expected.
+   */
+  decide(input) {
+    if (this.consumedBytes >= this.budgetBytes) {
+      return { action: "skip", reason: "budget-exhausted" };
+    }
+    const withinBudget = this.consumedBytes + this.maxDumpBytes <= this.budgetBytes;
+    if (input.isFinal) {
+      return withinBudget ? { action: "flush", reason: "final" } : { action: "skip", reason: "budget-cap" };
+    }
+    if (!this.cooldownReady(input.now)) {
+      return { action: "skip", reason: "cooldown" };
+    }
+    if (!withinBudget) {
+      return { action: "skip", reason: "budget-cap" };
+    }
+    if (input.triggered) {
+      return { action: "flush", reason: `trigger:${formatTraceTrigger(input.triggered)}` };
+    }
+    const allowance = this.allowanceAt(input.elapsedMs);
+    if (this.consumedBytes < allowance * (1 - this.headroom)) {
+      return { action: "flush", reason: "pace" };
+    }
+    return { action: "skip", reason: "on-pace" };
+  }
+};
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+// ../../packages/cli/src/commands/perf-netlog-trim.ts
+import fs9 from "node:fs";
+import path20 from "node:path";
+var URL_REQUEST_TYPE_KEYS = ["URL_REQUEST", "NET_URL_REQUEST"];
+var DEFAULT_URL_REQUEST_WEIGHT = 2;
+var HEADER_SCAN_LIMIT_BYTES = 64 * 1024 * 1024;
+var READ_CHUNK_BYTES = 256 * 1024;
+var FOOTER_RESERVE_BYTES = 512;
+var CH_QUOTE = 34;
+var CH_BACKSLASH = 92;
+var CH_OPEN_BRACE = 123;
+var CH_CLOSE_BRACE = 125;
+var CH_OPEN_BRACKET = 91;
+var CH_CLOSE_BRACKET = 93;
+var CH_COLON = 58;
+var CH_SPACE = 32;
+var CH_TAB = 9;
+var CH_LF = 10;
+var CH_CR = 13;
+function isWhitespaceByte(c) {
+  return c === CH_SPACE || c === CH_TAB || c === CH_LF || c === CH_CR;
+}
+async function scanHeader(filePath, scanLimitBytes) {
+  const fd = await fs9.promises.open(filePath, "r");
+  try {
+    const stat2 = await fd.stat();
+    const limit = Math.min(scanLimitBytes, stat2.size);
+    if (limit === 0) throw new Error("netlog source file is empty");
+    const buf = Buffer.alloc(limit);
+    const { bytesRead } = await fd.read(buf, 0, limit, 0);
+    const view = buf.subarray(0, bytesRead);
+    let state = "normal";
+    let depth = 0;
+    let eventsArrayStart = -1;
+    let eventsKeyStart = -1;
+    for (let i = 0; i < view.length; i++) {
+      const c = view[i];
+      if (state === "escape") {
+        state = "string";
+        continue;
+      }
+      if (state === "string") {
+        if (c === CH_BACKSLASH) state = "escape";
+        else if (c === CH_QUOTE) state = "normal";
+        continue;
+      }
+      if (c === CH_QUOTE) {
+        if (depth === 1 && view.length - i >= 8) {
+          const slice = view.subarray(i, i + 8);
+          if (slice[0] === CH_QUOTE && slice[1] === 101 && slice[2] === 118 && slice[3] === 101 && slice[4] === 110 && slice[5] === 116 && slice[6] === 115 && slice[7] === CH_QUOTE) {
+            let j = i + 8;
+            while (j < view.length && isWhitespaceByte(view[j] ?? 0)) j++;
+            if (j < view.length && view[j] === CH_COLON) {
+              j++;
+              while (j < view.length && isWhitespaceByte(view[j] ?? 0)) j++;
+              if (j < view.length && view[j] === CH_OPEN_BRACKET) {
+                eventsKeyStart = i;
+                eventsArrayStart = j + 1;
+                break;
+              }
+            }
+          }
+        }
+        state = "string";
+        continue;
+      }
+      if (c === CH_OPEN_BRACE) {
+        depth++;
+        continue;
+      }
+      if (c === CH_CLOSE_BRACE) {
+        depth--;
+        continue;
+      }
+    }
+    if (eventsArrayStart < 0 || eventsKeyStart < 0) {
+      throw new Error(
+        `netlog events array not found within first ${limit} bytes (header limit too small or file malformed)`
+      );
+    }
+    let constantsText = view.subarray(0, eventsKeyStart).toString("utf-8");
+    constantsText = constantsText.replace(/[,\s]+$/, "");
+    constantsText += "}";
+    let root;
+    try {
+      root = JSON.parse(constantsText);
+    } catch (err) {
+      throw new Error(
+        `netlog header parse failed (constants block invalid): ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+    const constants = root.constants ?? {};
+    const headerBytes = Buffer.from(view.subarray(0, eventsArrayStart));
+    return {
+      headerBytes,
+      eventsArrayStart,
+      constants,
+      urlRequestTypeId: resolveUrlRequestTypeId(constants)
+    };
+  } finally {
+    await fd.close();
+  }
+}
+function resolveUrlRequestTypeId(constants) {
+  const sourceTypeMap = constants.logSourceType;
+  if (!sourceTypeMap || typeof sourceTypeMap !== "object" || Array.isArray(sourceTypeMap)) {
+    return null;
+  }
+  const entries = sourceTypeMap;
+  for (const key of URL_REQUEST_TYPE_KEYS) {
+    const value = entries[key];
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+  }
+  return null;
+}
+async function scanEvents(filePath, eventsArrayStart) {
+  const fd = await fs9.promises.open(filePath, "r");
+  try {
+    const stat2 = await fd.stat();
+    const totalSize = stat2.size;
+    const events = [];
+    let depth = 0;
+    let state = "normal";
+    let eventStartOffset = -1;
+    let eventSlices = [];
+    let chunkSliceStart = -1;
+    let footerStart = -1;
+    let pos = eventsArrayStart;
+    const buf = Buffer.alloc(READ_CHUNK_BYTES);
+    while (pos < totalSize) {
+      const { bytesRead } = await fd.read(buf, 0, READ_CHUNK_BYTES, pos);
+      if (bytesRead === 0) break;
+      if (eventStartOffset >= 0) chunkSliceStart = 0;
+      else chunkSliceStart = -1;
+      for (let i = 0; i < bytesRead; i++) {
+        const c = buf[i];
+        if (state === "escape") {
+          state = "string";
+          continue;
+        }
+        if (state === "string") {
+          if (c === CH_BACKSLASH) state = "escape";
+          else if (c === CH_QUOTE) state = "normal";
+          continue;
+        }
+        if (c === CH_QUOTE) {
+          state = "string";
+          continue;
+        }
+        if (c === CH_OPEN_BRACE) {
+          if (depth === 0) {
+            eventStartOffset = pos + i;
+            chunkSliceStart = i;
+            eventSlices = [];
+          }
+          depth++;
+          continue;
+        }
+        if (c === CH_CLOSE_BRACE) {
+          depth--;
+          if (depth === 0 && eventStartOffset >= 0) {
+            eventSlices.push(Buffer.from(buf.subarray(chunkSliceStart, i + 1)));
+            const eventBuf = Buffer.concat(eventSlices);
+            const meta = describeEvent(eventBuf, eventStartOffset);
+            if (meta) events.push(meta);
+            eventStartOffset = -1;
+            eventSlices = [];
+            chunkSliceStart = -1;
+          }
+          continue;
+        }
+        if (c === CH_CLOSE_BRACKET && depth === 0) {
+          footerStart = pos + i;
+          break;
+        }
+      }
+      if (eventStartOffset >= 0 && chunkSliceStart >= 0 && footerStart < 0) {
+        eventSlices.push(Buffer.from(buf.subarray(chunkSliceStart, bytesRead)));
+      }
+      if (footerStart >= 0) break;
+      pos += bytesRead;
+    }
+    if (footerStart < 0) {
+      throw new Error("netlog events array did not close (file truncated)");
+    }
+    const footerLength = totalSize - footerStart;
+    const footerBytes = Buffer.alloc(footerLength);
+    if (footerLength > 0) {
+      await fd.read(footerBytes, 0, footerLength, footerStart);
+    }
+    return { events, footerStart, footerBytes };
+  } finally {
+    await fd.close();
+  }
+}
+function describeEvent(eventBuf, offset) {
+  try {
+    const parsed = JSON.parse(eventBuf.toString("utf-8"));
+    const sourceObj = parsed.source && typeof parsed.source === "object" && !Array.isArray(parsed.source) ? parsed.source : null;
+    const sourceId = sourceObj && typeof sourceObj.id === "number" && Number.isFinite(sourceObj.id) ? sourceObj.id : null;
+    const sourceType = sourceObj && typeof sourceObj.type === "number" && Number.isFinite(sourceObj.type) ? sourceObj.type : null;
+    const rawTime = parsed.time;
+    const time = typeof rawTime === "number" ? rawTime : typeof rawTime === "string" && rawTime.length > 0 ? Number(rawTime) : Number.NaN;
+    return {
+      offset,
+      length: eventBuf.length,
+      sourceId,
+      sourceType,
+      time: Number.isFinite(time) ? time : 0
+    };
+  } catch {
+    return null;
+  }
+}
+function groupEvents(events, urlRequestTypeId, urlRequestWeight) {
+  const groupsBySourceId = /* @__PURE__ */ new Map();
+  const globalGroup = {
+    sourceId: null,
+    sourceType: null,
+    isGlobal: true,
+    events: [],
+    firstTime: Number.POSITIVE_INFINITY,
+    lastTime: Number.NEGATIVE_INFINITY,
+    byteSize: 0,
+    score: Number.POSITIVE_INFINITY
+  };
+  for (const ev of events) {
+    const target = ev.sourceId === null ? globalGroup : (() => {
+      const existing = groupsBySourceId.get(ev.sourceId);
+      if (existing) return existing;
+      const created = {
+        sourceId: ev.sourceId,
+        sourceType: ev.sourceType,
+        isGlobal: false,
+        events: [],
+        firstTime: Number.POSITIVE_INFINITY,
+        lastTime: Number.NEGATIVE_INFINITY,
+        byteSize: 0,
+        score: 0
+      };
+      groupsBySourceId.set(ev.sourceId, created);
+      return created;
+    })();
+    target.events.push(ev);
+    target.byteSize += ev.length;
+    if (ev.time < target.firstTime) target.firstTime = ev.time;
+    if (ev.time > target.lastTime) target.lastTime = ev.time;
+    if (target.sourceType === null && ev.sourceType !== null) target.sourceType = ev.sourceType;
+  }
+  for (const group of groupsBySourceId.values()) {
+    const span = group.firstTime === Number.POSITIVE_INFINITY ? 0 : group.lastTime - group.firstTime;
+    const weight = urlRequestTypeId !== null && group.sourceType === urlRequestTypeId ? urlRequestWeight : 1;
+    group.score = span * weight;
+  }
+  const ordered = [];
+  if (globalGroup.events.length > 0) ordered.push(globalGroup);
+  ordered.push(
+    ...[...groupsBySourceId.values()].sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (b.byteSize !== a.byteSize) return b.byteSize - a.byteSize;
+      return (a.sourceId ?? 0) - (b.sourceId ?? 0);
+    })
+  );
+  return ordered;
+}
+function selectKeptGroups(groups, eventsBudgetBytes) {
+  const keptGroups = [];
+  const keptEvents = [];
+  let eventsBytes = 0;
+  let separatorBytes = 0;
+  for (const group of groups) {
+    const sortedGroupEvents = [...group.events].sort((a, b) => a.offset - b.offset);
+    const PER_SEPARATOR_BYTES = 2;
+    const groupSeparators = keptEvents.length === 0 ? Math.max(0, sortedGroupEvents.length - 1) : sortedGroupEvents.length;
+    const tentative = eventsBytes + group.byteSize + (separatorBytes + groupSeparators) * PER_SEPARATOR_BYTES;
+    if (group.isGlobal) {
+      keptGroups.push(group);
+      keptEvents.push(...sortedGroupEvents);
+      eventsBytes += group.byteSize;
+      separatorBytes += groupSeparators;
+      continue;
+    }
+    if (tentative > eventsBudgetBytes && keptEvents.length > 0) {
+      break;
+    }
+    keptGroups.push(group);
+    keptEvents.push(...sortedGroupEvents);
+    eventsBytes += group.byteSize;
+    separatorBytes += groupSeparators;
+  }
+  keptEvents.sort((a, b) => a.offset - b.offset);
+  return {
+    keptGroups,
+    keptEvents,
+    eventsBytes: eventsBytes + separatorBytes * 2
+  };
+}
+async function writeTrimmedOutput(sourcePath, outputPath, headerBytes, keptEvents, footerBytes) {
+  await fs9.promises.mkdir(path20.dirname(outputPath), { recursive: true });
+  const srcFd = await fs9.promises.open(sourcePath, "r");
+  const outFd = await fs9.promises.open(outputPath, "w");
+  try {
+    let written = 0;
+    await outFd.write(headerBytes);
+    written += headerBytes.length;
+    if (keptEvents.length > 0) {
+      await outFd.write("\n");
+      written += 1;
+    }
+    for (let i = 0; i < keptEvents.length; i++) {
+      const ev = keptEvents[i];
+      if (!ev) continue;
+      if (i > 0) {
+        await outFd.write(",\n");
+        written += 2;
+      }
+      const eventBuf = Buffer.alloc(ev.length);
+      await srcFd.read(eventBuf, 0, ev.length, ev.offset);
+      await outFd.write(eventBuf);
+      written += ev.length;
+    }
+    if (keptEvents.length > 0) {
+      await outFd.write("\n");
+      written += 1;
+    }
+    await outFd.write(footerBytes);
+    written += footerBytes.length;
+    return written;
+  } finally {
+    await outFd.close();
+    await srcFd.close();
+  }
+}
+async function trimNetLog(opts) {
+  const startedAt = Date.now();
+  const budgetBytes = Math.max(0, Math.floor(opts.budgetBytes));
+  if (!Number.isFinite(budgetBytes) || budgetBytes <= 0) {
+    throw new Error(`netlog trim budget must be > 0, got ${opts.budgetBytes}`);
+  }
+  const urlRequestWeight = opts.urlRequestWeight !== void 0 && Number.isFinite(opts.urlRequestWeight) ? Math.max(1, opts.urlRequestWeight) : DEFAULT_URL_REQUEST_WEIGHT;
+  const headerScanLimit = opts.headerScanLimitBytes ?? HEADER_SCAN_LIMIT_BYTES;
+  const sourceStat = await fs9.promises.stat(opts.sourcePath);
+  const sourceBytes = sourceStat.size;
+  const header = await scanHeader(opts.sourcePath, headerScanLimit);
+  const { events, footerBytes } = await scanEvents(opts.sourcePath, header.eventsArrayStart);
+  const eventsBudget = Math.max(
+    0,
+    budgetBytes - header.headerBytes.length - footerBytes.length - FOOTER_RESERVE_BYTES
+  );
+  const groups = groupEvents(events, header.urlRequestTypeId, urlRequestWeight);
+  const selection = selectKeptGroups(groups, eventsBudget);
+  const outputBytes = await writeTrimmedOutput(
+    opts.sourcePath,
+    opts.outputPath,
+    header.headerBytes,
+    selection.keptEvents,
+    footerBytes
+  );
+  return {
+    sourceBytes,
+    outputBytes,
+    budgetBytes,
+    groupsTotal: groups.length,
+    groupsKept: selection.keptGroups.length,
+    eventsTotal: events.length,
+    eventsKept: selection.keptEvents.length,
+    headerBytes: header.headerBytes.length,
+    footerBytes: footerBytes.length,
+    durationMs: Date.now() - startedAt
+  };
+}
+
+// ../../packages/cli/src/commands/perf.ts
+var RECORD_HEAP_SAMPLING_INTERVAL_BYTES = 4 * 1024 * 1024;
+var MAX_RECORD_DURATION_MS = 60 * 60 * 1e3;
+var DEFAULT_TRACE_BUFFER_MB = 16;
+var DEFAULT_TRACE_BUDGET_MB = 500;
+var DEFAULT_TRACE_TRIGGER = "cpu>80";
+var DEFAULT_TRACE_COOLDOWN = "15s";
+var DEFAULT_TRACE_POLL = "1s";
+var DEFAULT_NETLOG_BUDGET_MB = 500;
+var DEFAULT_NETLOG_CAPTURE_CEILING_MB = 2 * 1024;
+function readRawConfig() {
+  const configPath = getConfigPath();
+  try {
+    const raw = fs10.readFileSync(configPath, "utf-8");
+    const parsed = jsYaml.load(raw);
+    if (parsed != null && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed;
+    }
+  } catch {
+  }
+  return {};
+}
+function writePerformanceEnabled(enabled) {
+  const configPath = getConfigPath();
+  const current = readRawConfig();
+  const performance2 = current.performance != null && typeof current.performance === "object" && !Array.isArray(current.performance) ? { ...current.performance } : {};
+  performance2.enabled = enabled;
+  current.performance = performance2;
+  fs10.mkdirSync(path21.dirname(configPath), { recursive: true });
+  fs10.writeFileSync(
+    configPath,
+    jsYaml.dump(current, { indent: 2, lineWidth: -1, noRefs: true }),
+    "utf-8"
+  );
+  resetConfig();
+}
+function defaultPerfRootDir() {
+  return path21.join(getConfig().dataDir, "perf");
+}
+function defaultPerfBundlesDir() {
+  return path21.join(defaultPerfRootDir(), "bundles");
+}
+function resolvePerfBundleOutputDir(out, runId) {
+  const raw = out?.trim();
+  if (!raw) return path21.join(defaultPerfBundlesDir(), runId);
+  const resolved = path21.resolve(raw);
+  if (resolved.endsWith(".json")) {
+    return path21.join(path21.dirname(resolved), `${path21.basename(resolved, ".json")}-bundle`);
+  }
+  return path21.join(resolved, runId);
+}
+function isPathInside(parent, candidate) {
+  const relative = path21.relative(path21.resolve(parent), path21.resolve(candidate));
+  return relative === "" || !relative.startsWith("..") && !path21.isAbsolute(relative);
+}
+function assertUploadBundleDir(bundleDir) {
+  const perfRoot = defaultPerfRootDir();
+  if (isPathInside(perfRoot, bundleDir)) return;
+  throw new Error(
+    `perf record --upload can only write bundles under ${perfRoot}; omit --out or choose a path inside the local perf directory.`
+  );
+}
+function assertUploadSuccess(upload) {
+  if (upload.success === true) return;
+  throw new Error(`perf bundle upload failed: ${upload.error ?? "unknown upload error"}`);
+}
+function writeJsonFile(filePath, value) {
+  fs10.mkdirSync(path21.dirname(filePath), { recursive: true });
+  fs10.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}
+`, "utf-8");
+}
+function relativeBundlePath(bundleDir, filePath) {
+  return path21.relative(bundleDir, filePath).replaceAll(path21.sep, "/");
+}
+function fileSize(filePath) {
+  try {
+    return fs10.statSync(filePath).size;
+  } catch {
+    return void 0;
+  }
+}
+function safeArtifactName(value, fallback2) {
+  const normalized = (value ?? fallback2).replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
+  return normalized || fallback2;
+}
+function profileArtifactBase(profile, index) {
+  const processName = safeArtifactName(profile.process, "profile");
+  const pid = profile.pid ? `-${profile.pid}` : "";
+  const webContents = "webContentsId" in profile ? `-wc${String(profile.webContentsId)}` : "";
+  return `${String(index).padStart(2, "0")}-${processName}${pid}${webContents}`;
+}
+function copyArtifact(sourcePath, targetPath, kind, bundleDir) {
+  if (!sourcePath) return null;
+  try {
+    fs10.mkdirSync(path21.dirname(targetPath), { recursive: true });
+    if (path21.resolve(sourcePath) !== path21.resolve(targetPath)) {
+      fs10.copyFileSync(sourcePath, targetPath);
+    } else if (!fs10.existsSync(sourcePath)) {
+      return null;
+    }
+    return { kind, path: relativeBundlePath(bundleDir, targetPath), bytes: fileSize(targetPath) };
+  } catch {
+    return null;
+  }
+}
+function writeProfileArtifacts(bundleDir, profiles) {
+  const artifacts = [];
+  const strippedProfiles = profiles.map((profile, index) => {
+    const base = profileArtifactBase(profile, index);
+    const stripped = stripProfilePayload(profile);
+    if (profile.cpuProfile) {
+      const cpuPath = path21.join(bundleDir, "profiles", `${base}.cpuprofile`);
+      writeJsonFile(cpuPath, profile.cpuProfile);
+      const relativePath = relativeBundlePath(bundleDir, cpuPath);
+      artifacts.push({
+        kind: "cpu-profile",
+        path: relativePath,
+        bytes: fileSize(cpuPath),
+        process: profile.process
+      });
+      stripped.cpuProfilePath = relativePath;
+    }
+    if (profile.heapProfile) {
+      const heapPath = path21.join(bundleDir, "profiles", `${base}.heapprofile`);
+      writeJsonFile(heapPath, profile.heapProfile);
+      const relativePath = relativeBundlePath(bundleDir, heapPath);
+      artifacts.push({
+        kind: "heap-profile",
+        path: relativePath,
+        bytes: fileSize(heapPath),
+        process: profile.process
+      });
+      stripped.heapProfilePath = relativePath;
+    }
+    return stripped;
+  });
+  return { artifacts, profiles: strippedProfiles };
+}
+function buildBundleManifest(run, artifacts) {
+  const profiles = run.profiles ?? [];
+  return {
+    schemaVersion: 1,
+    runId: run.run.id,
+    generatedAt: Date.now(),
+    capture: {
+      startedAt: run.run.startedAt,
+      endedAt: run.run.endedAt,
+      durationMs: run.run.durationMs,
+      sampleIntervalMs: run.run.sampleIntervalMs,
+      ...run.run.scenario ? { scenario: run.run.scenario } : {}
+    },
+    privacy: {
+      uploadRequiresUserAction: true,
+      networkCaptureMode: "metadata",
+      containsCpuProfiles: profiles.some((profile) => !!profile.cpuProfile),
+      containsHeapProfiles: profiles.some((profile) => !!profile.heapProfile)
+    },
+    artifacts
+  };
+}
+function writePerfBundle(bundleDir, run, tracePath, netLogPath) {
+  fs10.mkdirSync(bundleDir, { recursive: true });
+  const artifacts = [];
+  if (run.traces && run.traces.length > 0) {
+    for (const file of run.traces) {
+      if (!file.path || file.available === false) continue;
+      const absolute = path21.isAbsolute(file.path) ? file.path : path21.join(bundleDir, file.path);
+      artifacts.push({
+        kind: "trace",
+        path: relativeBundlePath(bundleDir, absolute),
+        bytes: file.bytes ?? fileSize(absolute)
+      });
+    }
+  } else {
+    const traceArtifact = copyArtifact(
+      tracePath,
+      path21.join(bundleDir, "trace", "chromium-trace.json"),
+      "trace",
+      bundleDir
+    );
+    if (traceArtifact) artifacts.push(traceArtifact);
+  }
+  const netLogArtifact = copyArtifact(
+    netLogPath,
+    path21.join(bundleDir, "net", "netlog.json"),
+    "netlog",
+    bundleDir
+  );
+  if (netLogArtifact) artifacts.push(netLogArtifact);
+  const profileArtifacts = writeProfileArtifacts(bundleDir, run.profiles ?? []);
+  artifacts.push(...profileArtifacts.artifacts);
+  const speedscopeArtifacts = [];
+  const cpuSpeedscope = buildCpuSpeedscopeFile(run);
+  if (cpuSpeedscope) {
+    const cpuSpeedscopePath = path21.join(bundleDir, "speedscope.json");
+    writeJsonFile(cpuSpeedscopePath, cpuSpeedscope);
+    speedscopeArtifacts.push({
+      kind: "speedscope",
+      path: relativeBundlePath(bundleDir, cpuSpeedscopePath),
+      bytes: fileSize(cpuSpeedscopePath),
+      process: "cpu"
+    });
+  }
+  const heapSpeedscope = buildHeapSpeedscopeFile(run);
+  if (heapSpeedscope) {
+    const heapSpeedscopePath = path21.join(bundleDir, "heap-speedscope.json");
+    writeJsonFile(heapSpeedscopePath, heapSpeedscope);
+    speedscopeArtifacts.push({
+      kind: "speedscope",
+      path: relativeBundlePath(bundleDir, heapSpeedscopePath),
+      bytes: fileSize(heapSpeedscopePath),
+      process: "heap"
+    });
+  }
+  const runPath = path21.join(bundleDir, "run.json");
+  const manifestPath = path21.join(bundleDir, "manifest.json");
+  const summaryPath = path21.join(bundleDir, "summary.json");
+  const guidePath = path21.join(bundleDir, "README.md");
+  const manifest = buildBundleManifest(run, [
+    { kind: "run", path: relativeBundlePath(bundleDir, runPath) },
+    { kind: "manifest", path: relativeBundlePath(bundleDir, manifestPath) },
+    { kind: "summary", path: relativeBundlePath(bundleDir, summaryPath) },
+    { kind: "viewer-guide", path: relativeBundlePath(bundleDir, guidePath) },
+    ...speedscopeArtifacts,
+    ...artifacts
+  ]);
+  const runWithManifest = {
+    ...run,
+    profile: run.profile ? stripProfilePayload(run.profile) : run.profile,
+    profiles: profileArtifacts.profiles,
+    manifest,
+    artifacts: manifest.artifacts
+  };
+  writeJsonFile(runPath, runWithManifest);
+  writeJsonFile(summaryPath, buildPerfBundleSummary(runWithManifest, manifest.artifacts));
+  fs10.writeFileSync(guidePath, renderPerfBundleReadme(runWithManifest, manifest), "utf-8");
+  writeJsonFile(manifestPath, manifest);
+  return manifest;
+}
+function fmtMiB(value) {
+  return value === void 0 ? "n/a" : `${value.toFixed(1)} MiB`;
+}
+function fmtPercent(value) {
+  return value === void 0 ? "n/a" : `${value.toFixed(1)}%`;
+}
+function fmtMs(value) {
+  return value === void 0 ? "n/a" : `${value.toFixed(1)} ms`;
+}
+function oneLine(command) {
+  const collapsed = command.replace(/\s+/g, " ").trim();
+  return collapsed.length <= 120 ? collapsed : `${collapsed.slice(0, 119)}\u2026`;
+}
+function printStatus(status) {
+  printTable([
+    ["Enabled", status.enabled ? "yes" : "no"],
+    ["Started At", formatLocalDateTime(status.startedAt)],
+    ["Sample Interval", `${status.sampleIntervalMs} ms`],
+    ["Retention", `${status.retentionMs} ms`],
+    ["History", status.historyEnabled === false ? "no" : "yes"],
+    ["History Retention", `${status.historyRetentionMs ?? 0} ms`],
+    ["History Max Bytes", `${status.historyMaxBytes ?? 0}`],
+    ["Process Tree", status.processTree ? "yes" : "no"],
+    ["Root PID", String(status.rootPid)],
+    ["Samples", String(status.sampleCount)]
+  ]);
+}
+function printProcessList(title, processes) {
+  if (processes.length === 0) return;
+  process.stdout.write(`
+${title}
+`);
+  for (const proc of processes.slice(0, 5)) {
+    process.stdout.write(
+      `- pid=${proc.pid} role=${proc.role} rss=${(proc.rssBytes / 1024 / 1024).toFixed(1)}MiB cpu=${fmtPercent(proc.cpuPercent)} ${oneLine(proc.command)}
+`
+    );
+  }
+}
+function printReport(report) {
+  const s = report.summary;
+  printTable([
+    ["Enabled", report.enabled ? "yes" : "no"],
+    ["Window Start", formatLocalDateTime(report.since)],
+    ["Window End", formatLocalDateTime(report.until)],
+    ["Samples", String(report.sampleCount)],
+    ["Total RSS Peak", fmtMiB(s.totalRssPeakMiB)],
+    ["Daemon RSS Peak", fmtMiB(s.daemonRssPeakMiB)],
+    ["Daemon Heap Peak", fmtMiB(s.daemonHeapPeakMiB)],
+    ["Daemon CPU Peak", fmtPercent(s.daemonCpuPeakPercent)],
+    ["Event Loop P99 Peak", fmtMs(s.eventLoopP99PeakMs)],
+    ["Renderer RSS Peak", fmtMiB(s.rendererRssPeakMiB)],
+    ["Renderer CPU Peak", fmtPercent(s.rendererCpuPeakPercent)],
+    ["GPU RSS Peak", fmtMiB(s.gpuRssPeakMiB)],
+    ["GPU CPU Peak", fmtPercent(s.gpuCpuPeakPercent)],
+    ["OpenCode RSS Peak", fmtMiB(s.opencodeRssPeakMiB)],
+    ["OpenCode CPU Peak", fmtPercent(s.opencodeCpuPeakPercent)],
+    ["MCP RSS Peak", fmtMiB(s.mcpRssPeakMiB)],
+    ["MCP CPU Peak", fmtPercent(s.mcpCpuPeakPercent)],
+    ["Process Count Peak", s.processCountPeak === void 0 ? "n/a" : String(s.processCountPeak)]
+  ]);
+  if (report.roleSummaries && report.roleSummaries.length > 0) {
+    process.stdout.write("\nRole CPU / Memory\n");
+    printTable(
+      report.roleSummaries.map((role) => [
+        role.role,
+        `rss latest=${fmtMiB(role.rssLatestMiB)} peak=${fmtMiB(role.rssPeakMiB)} cpu latest=${fmtPercent(role.cpuLatestPercent)} peak=${fmtPercent(role.cpuPeakPercent)} processes=${role.processCountLatest}/${role.processCountPeak}`
+      ])
+    );
+  }
+  process.stdout.write("\nRecommendations\n");
+  for (const item of report.recommendations) {
+    process.stdout.write(`- ${item}
+`);
+  }
+  printProcessList("Top CPU Processes", report.topProcessesByCpu ?? []);
+  printProcessList("Top RSS Processes", report.topProcessesByRss);
+}
+function printSnapshot(snapshot) {
+  const sample = snapshot.sample;
+  if (!sample) {
+    process.stdout.write("No performance sample is available.\n");
+    return;
+  }
+  printTable([
+    ["Enabled", snapshot.enabled ? "yes" : "no"],
+    ["Sample At", formatLocalDateTime(sample.ts)],
+    ["Daemon RSS", fmtMiB(sample.memory.rss / 1024 / 1024)],
+    ["Daemon Heap", fmtMiB(sample.memory.heapUsed / 1024 / 1024)],
+    ["Daemon CPU", fmtPercent(sample.cpu.total * 100)],
+    [
+      "Total RSS",
+      fmtMiB(
+        sample.processTree?.totalRssBytes === void 0 ? void 0 : sample.processTree.totalRssBytes / 1024 / 1024
+      )
+    ],
+    ["Total CPU", fmtPercent(sample.processTree?.totalCpuPercent)],
+    ["Processes", sample.processTree ? String(sample.processTree.processCount) : "n/a"],
+    ["Electron Metrics", snapshot.electron ? "yes" : "no"]
+  ]);
+  printProcessList(
+    "Top CPU Processes",
+    [...sample.processTree?.processes ?? []].sort(
+      (a, b) => (b.cpuPercent ?? 0) - (a.cpuPercent ?? 0)
+    )
+  );
+  printProcessList("Top RSS Processes", sample.processTree?.processes ?? []);
+}
+function parseTraceDurationMs(raw) {
+  if (!raw) return 1e4;
+  const match = /^(\d+)(ms|s|m|h)?$/.exec(raw);
+  if (!match) return 1e4;
+  const amount = Number(match[1]);
+  const unit = match[2] ?? "ms";
+  const scale = unit === "ms" ? 1 : unit === "s" ? 1e3 : unit === "m" ? 6e4 : 36e5;
+  return amount * scale;
+}
+function parseDurationMs(raw, fallbackMs) {
+  if (!raw) return fallbackMs;
+  const match = /^(\d+)(ms|s|m|h)?$/.exec(raw);
+  if (!match) return fallbackMs;
+  const amount = Number(match[1]);
+  const unit = match[2] ?? "ms";
+  const scale = unit === "ms" ? 1 : unit === "s" ? 1e3 : unit === "m" ? 6e4 : 36e5;
+  return Math.max(250, amount * scale);
+}
+function sleep2(ms) {
+  return new Promise((resolve2) => setTimeout(resolve2, ms));
+}
+function parseTraceMode(raw) {
+  const normalized = (raw ?? "window").trim().toLowerCase();
+  if (normalized === "window" || normalized === "buffer") return normalized;
+  throw new Error(`Unsupported --trace-mode "${raw}". Use window or buffer.`);
+}
+function parsePositiveMb(raw, fallbackMb) {
+  if (raw === void 0 || raw === "") return fallbackMb;
+  const numeric = Number(raw);
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    throw new Error(`Invalid size "${raw}": expected a positive number of MB.`);
+  }
+  return numeric;
+}
+function assertRecordDurationAllowed(durationMs, forceLong) {
+  if (durationMs <= MAX_RECORD_DURATION_MS || forceLong === true) return;
+  throw new Error("perf record duration exceeds 1h; pass --force-long to run longer captures.");
+}
+function parseRecordWindow(raw, fallback2) {
+  const normalized = (raw ?? fallback2).trim();
+  if (normalized === "start" || normalized === "middle" || normalized === "end") {
+    return normalized;
+  }
+  throw new Error(`Unsupported capture window "${normalized}". Use start, middle, or end.`);
+}
+function parseRecordWindows(raw, fallback2) {
+  const parts = (raw ?? fallback2.join(",")).split(",").map((part) => part.trim()).filter(Boolean);
+  const parsed = parts.length > 0 ? parts : fallback2;
+  return parsed.reduce((acc, part) => {
+    const window2 = parseRecordWindow(part, fallback2[0] ?? "start");
+    return acc.includes(window2) ? acc : [...acc, window2];
+  }, []);
+}
+function recordWindowOffsetMs(totalDurationMs, captureDurationMs, window2) {
+  const maxOffset = Math.max(0, totalDurationMs - captureDurationMs);
+  if (window2 === "start") return 0;
+  if (window2 === "end") return maxOffset;
+  return Math.floor(maxOffset / 2);
+}
+function buildCaptureWindows(windows, totalDurationMs, requestedDurationMs) {
+  const durationMs = Math.min(totalDurationMs, Math.max(250, requestedDurationMs));
+  return windows.reduce((acc, label) => {
+    const delayMs = recordWindowOffsetMs(totalDurationMs, durationMs, label);
+    const overlaps = acc.some(
+      (existing) => delayMs < existing.delayMs + existing.durationMs && existing.delayMs < delayMs + durationMs
+    );
+    return overlaps ? acc : [...acc, { label, delayMs, durationMs }];
+  }, []);
+}
+async function waitForRecordOffset(startedAt, offsetMs) {
+  const waitMs = startedAt + offsetMs - Date.now();
+  if (waitMs > 0) await sleep2(waitMs);
+}
+function tagProfileCapture(profile, fallbackProcess, window2) {
+  if (!profile) return profile;
+  return {
+    ...profile,
+    process: `${safeArtifactName(profile.process, fallbackProcess)}-${window2}`
+  };
+}
+function errorMessage(err) {
+  return err instanceof Error ? err.message : String(err);
+}
+async function stopTraceRecording(state) {
+  if (!state.trace) return null;
+  state.trace = false;
+  try {
+    return await getClient().request(
+      "POST",
+      "/api/performance/trace/stop",
+      void 0,
+      15e3
+    );
+  } catch (err) {
+    return { available: false, error: errorMessage(err) };
+  }
+}
+async function stopNetLogRecording(state) {
+  if (!state.netLog) return null;
+  state.netLog = false;
+  try {
+    return await getClient().request(
+      "POST",
+      "/api/performance/netlog/stop",
+      void 0,
+      15e3
+    );
+  } catch (err) {
+    return { available: false, error: errorMessage(err) };
+  }
+}
+async function stopActiveRecordCaptures(state) {
+  if (state.stopping) return state.stopping;
+  state.stopping = Promise.all([stopTraceRecording(state), stopNetLogRecording(state)]).then(() => void 0).finally(() => {
+    state.stopping = void 0;
+  });
+  return state.stopping;
+}
+function installRecordCaptureSignalCleanup(state) {
+  const onSignal = (signal) => {
+    process.stderr.write(`Stopping active perf captures before ${signal}...
+`);
+    void stopActiveRecordCaptures(state).finally(() => {
+      process.exit(signal === "SIGINT" ? 130 : 143);
+    });
+  };
+  process.once("SIGINT", onSignal);
+  process.once("SIGTERM", onSignal);
+  return () => {
+    process.removeListener("SIGINT", onSignal);
+    process.removeListener("SIGTERM", onSignal);
+  };
+}
+async function recordTraceWindow(startedAt, totalDurationMs, traceDurationMs, traceWindow, tracePath, state) {
+  await waitForRecordOffset(
+    startedAt,
+    recordWindowOffsetMs(totalDurationMs, traceDurationMs, traceWindow)
+  );
+  let started;
+  try {
+    started = await getClient().request(
+      "POST",
+      "/api/performance/trace/start",
+      {
+        confirm: true,
+        ...tracePath ? { path: tracePath } : {}
+      },
+      15e3
+    );
+    if (started.available === false) {
+      return {
+        durationMs: traceDurationMs,
+        started,
+        stopped: null,
+        available: false,
+        error: typeof started.error === "string" ? started.error : "trace_start_failed"
+      };
+    }
+    state.trace = true;
+    await sleep2(traceDurationMs);
+    const stopped = await stopTraceRecording(state);
+    return { durationMs: traceDurationMs, started, stopped };
+  } catch (err) {
+    const stopped = await stopTraceRecording(state);
+    return {
+      durationMs: traceDurationMs,
+      started,
+      stopped,
+      available: false,
+      error: errorMessage(err)
+    };
+  }
+}
+async function recordNetLogWindow(startedAt, totalDurationMs, netLogDurationMs, netLogWindow, netLogPath, state, captureCeilingBytes) {
+  await waitForRecordOffset(
+    startedAt,
+    recordWindowOffsetMs(totalDurationMs, netLogDurationMs, netLogWindow)
+  );
+  let started;
+  try {
+    started = await getClient().request(
+      "POST",
+      "/api/performance/netlog/start",
+      {
+        confirm: true,
+        ...netLogPath ? { path: netLogPath } : {},
+        ...captureCeilingBytes !== void 0 ? { captureCeilingBytes } : {}
+      },
+      15e3
+    );
+    if (started.available === false) {
+      return {
+        durationMs: netLogDurationMs,
+        started,
+        stopped: null,
+        available: false,
+        error: typeof started.error === "string" ? started.error : "netlog_start_failed"
+      };
+    }
+    state.netLog = true;
+    await sleep2(netLogDurationMs);
+    const stopped = await stopNetLogRecording(state);
+    return { durationMs: netLogDurationMs, started, stopped };
+  } catch (err) {
+    const stopped = await stopNetLogRecording(state);
+    return {
+      durationMs: netLogDurationMs,
+      started,
+      stopped,
+      available: false,
+      error: errorMessage(err)
+    };
+  }
+}
+function traceProgress(line) {
+  process.stderr.write(`${line}
+`);
+}
+function adoptTraceDumpFile(flushPath, seq2, reason, ts, bundleDir) {
+  const safeReason = safeArtifactName(reason, "dump");
+  const fileName = `chromium-trace-${String(seq2).padStart(3, "0")}-${safeReason}-${ts}.json`;
+  if (!bundleDir) return flushPath;
+  const target = path21.join(bundleDir, "trace", fileName);
+  fs10.mkdirSync(path21.dirname(target), { recursive: true });
+  try {
+    fs10.renameSync(flushPath, target);
+  } catch {
+    fs10.copyFileSync(flushPath, target);
+  }
+  return relativeBundlePath(bundleDir, target);
+}
+async function recordBufferTrace(params) {
+  const { startedAt, endAt, totalDurationMs, pollMs, cooldownMs, bufferKb, budgetBytes, triggers } = params;
+  const { bundleDir, state, snapshots, intervalMs } = params;
+  const traces = [];
+  let lastSnapshotPushAt = null;
+  const controller = new TraceBudgetController({
+    budgetBytes,
+    totalDurationMs,
+    bufferBytes: bufferKb * 1024,
+    cooldownMs
+  });
+  let started;
+  try {
+    started = await getClient().request(
+      "POST",
+      "/api/performance/trace/start",
+      {
+        confirm: true,
+        recordingMode: "record-continuously",
+        traceBufferSizeKb: bufferKb
+      },
+      15e3
+    );
+  } catch (err) {
+    const reason = errorMessage(err);
+    traceProgress(`[trace:buffer] start failed: ${reason}`);
+    traces.push({
+      seq: 1,
+      reason: "start-failed",
+      ts: Date.now(),
+      available: false,
+      error: reason
+    });
+    return traces;
+  }
+  if (!started || started.available === false || started.recording !== true) {
+    const reason = started && typeof started.error === "string" ? started.error : "trace_start_failed";
+    traceProgress(`[trace:buffer] start failed: ${reason}`);
+    traces.push({
+      seq: 1,
+      reason: "start-failed",
+      ts: Date.now(),
+      available: false,
+      error: reason
+    });
+    return traces;
+  }
+  state.trace = true;
+  traceProgress(
+    `[trace:buffer] started record-continuously buffer=${bufferKb}KB budget=${(budgetBytes / 1024 / 1024).toFixed(0)}MB poll=${pollMs}ms cooldown=${cooldownMs}ms`
+  );
+  const dumpOnce = async (reason, isFinal) => {
+    const now = Date.now();
+    let flush;
+    try {
+      flush = await getClient().request(
+        "POST",
+        "/api/performance/trace/flush",
+        {},
+        3e4
+      );
+    } catch (err) {
+      flush = { available: false, error: errorMessage(err) };
+    }
+    const seq2 = traces.length + 1;
+    if (flush.available === false || flush.flushed !== true || !flush.path) {
+      controller.recordDump(0, now);
+      traces.push({
+        seq: seq2,
+        reason,
+        ts: now,
+        available: false,
+        error: flush.error ?? "trace_flush_failed"
+      });
+      traceProgress(`[trace:buffer] dump #${seq2} (${reason}) failed: ${flush.error ?? "unknown"}`);
+      return;
+    }
+    const bytes = flush.bytes ?? fileSize(flush.path) ?? 0;
+    const storedPath = adoptTraceDumpFile(flush.path, seq2, reason, now, bundleDir);
+    controller.recordDump(bytes, now);
+    traces.push({ seq: seq2, reason, path: storedPath, bytes, ts: now, available: true });
+    traceProgress(
+      `[trace:buffer] dump #${seq2} (${reason}) ${(bytes / 1024 / 1024).toFixed(2)}MB consumed=${(controller.consumed / 1024 / 1024).toFixed(1)}/${(budgetBytes / 1024 / 1024).toFixed(0)}MB${isFinal ? " [final]" : ""}`
+    );
+  };
+  try {
+    while (Date.now() < endAt) {
+      const now = Date.now();
+      let triggered = null;
+      try {
+        const snapshot = await getClient().get(
+          "/api/performance/snapshot?fresh=true&electron=true",
+          Math.max(15e3, pollMs + 5e3)
+        );
+        const metrics = extractTraceTriggerMetrics(snapshot);
+        triggered = evaluateTraceTriggers(triggers, metrics);
+        if (snapshot.sample && (lastSnapshotPushAt === null || now - lastSnapshotPushAt >= intervalMs)) {
+          snapshots.push({
+            ts: snapshot.sample.ts,
+            sample: snapshot.sample,
+            electron: snapshot.electron ?? null
+          });
+          lastSnapshotPushAt = now;
+        }
+      } catch (err) {
+        traceProgress(`[trace:buffer] poll error: ${errorMessage(err)}`);
+      }
+      const decision = controller.decide({
+        now,
+        elapsedMs: now - startedAt,
+        triggered
+      });
+      if (decision.action === "flush") {
+        await dumpOnce(decision.reason, false);
+      }
+      const remaining = endAt - Date.now();
+      if (remaining <= 0) break;
+      await sleep2(Math.min(pollMs, remaining));
+    }
+    const finalDecision = controller.decide({
+      now: Date.now(),
+      elapsedMs: Date.now() - startedAt,
+      triggered: null,
+      isFinal: true
+    });
+    if (finalDecision.action === "flush") {
+      await dumpOnce(finalDecision.reason, true);
+    }
+  } finally {
+    await stopTraceRecording(state);
+  }
+  traceProgress(
+    `[trace:buffer] done: ${traces.length} dump(s), ${(controller.consumed / 1024 / 1024).toFixed(1)}MB total`
+  );
+  return traces;
+}
+function registerPerfCommands(program3) {
+  const perfCmd = program3.command("perf").description("Inspect local performance diagnostics");
+  perfCmd.command("enable").description("Enable runtime performance sampling in local config.yaml").action(() => {
+    writePerformanceEnabled(true);
+    printSuccess(
+      `Performance sampling enabled in ${getConfigPath()}. Restart the daemon to apply.`
+    );
+  });
+  perfCmd.command("disable").description("Disable runtime performance sampling in local config.yaml").action(() => {
+    writePerformanceEnabled(false);
+    printSuccess(
+      `Performance sampling disabled in ${getConfigPath()}. Restart the daemon to apply.`
+    );
+  });
+  perfCmd.command("config").description("Show local performance config without requiring the daemon").option("--json", "Print JSON output").action((opts) => {
+    const config = getConfig().performance;
+    if (opts.json) {
+      console.log(JSON.stringify(config, null, 2));
+      return;
+    }
+    printTable([
+      ["Enabled", config.enabled ? "yes" : "no"],
+      ["Capture Enabled", config.captureEnabled ? "yes" : "no"],
+      ["Capture Max Duration", `${config.captureMaxDurationMs} ms`],
+      ["Sample Interval", `${config.sampleIntervalMs} ms`],
+      ["Retention", `${config.retentionMs} ms`],
+      ["History", config.historyEnabled ? "yes" : "no"],
+      ["History Retention", `${config.historyRetentionMs} ms`],
+      ["History Max Bytes", `${config.historyMaxBytes}`],
+      ["Process Tree", config.processTree ? "yes" : "no"]
+    ]);
+  });
+  perfCmd.command("status").description("Show running sampler status").option("--json", "Print JSON output").action(async (opts) => {
+    try {
+      await getClient().requireRunning();
+      const status = await getClient().get("/api/performance/status");
+      if (opts.json) {
+        console.log(JSON.stringify(status, null, 2));
+        return;
+      }
+      printStatus(status);
+    } catch (err) {
+      handleDaemonError(err);
+    }
+  });
+  perfCmd.command("snapshot").description("Show latest performance sample").option("--cached", "Use latest cached sample instead of collecting a fresh one").option("--json", "Print JSON output").action(async (opts) => {
+    try {
+      await getClient().requireRunning();
+      const snapshot = await getClient().get(
+        `/api/performance/snapshot?fresh=${opts.cached ? "false" : "true"}&electron=true`
+      );
+      if (opts.json) {
+        console.log(JSON.stringify(snapshot, null, 2));
+        return;
+      }
+      printSnapshot(snapshot);
+    } catch (err) {
+      handleDaemonError(err);
+    }
+  });
+  perfCmd.command("report").description("Summarize performance samples and show optimization hints").option(
+    "--since <window>",
+    "Window start: startup, 30m, 2h, 1d, timestamp ms, or date string",
+    "startup"
+  ).option("--json", "Print JSON output").action(async (opts) => {
+    try {
+      await getClient().requireRunning();
+      const report = await getClient().get(
+        `/api/performance/report?since=${encodeURIComponent(opts.since)}&fresh=true`
+      );
+      if (opts.json) {
+        console.log(JSON.stringify(report, null, 2));
+        return;
+      }
+      printReport(report);
+    } catch (err) {
+      handleDaemonError(err);
+    }
+  });
+  perfCmd.command("record").description("Record performance samples to a JSON file for later visualization").option("--duration <window>", "Duration: 5000, 5s, 1m, 1h", "30s").option("--interval <window>", "Sampling interval: 1000, 1s, 5s", "1s").option("--force-long", "Allow record windows longer than 1h").option("--no-profile", "Skip daemon CPU and heap sampling profile capture").option("--profile-duration <window>", "Daemon CPU/heap profile window: 1000, 5s, 30s", "5s").option("--profile-windows <windows>", "Profile windows: start,middle,end", "start").option("--trace", "Capture a Chromium performance trace during the record window").option("--no-trace", "Skip Chromium performance trace capture (overrides --trace-mode)").option("--trace-window <window>", "Trace window: start, middle, or end", "start").option("--trace-duration <window>", "Chromium trace capture duration").option(
+    "--trace-mode <mode>",
+    "Trace capture mode: window (single fixed window) or buffer (ring buffer + metric-triggered dumps)",
+    "window"
+  ).option(
+    "--trace-buffer <size>",
+    "Ring buffer size in MB (buffer mode)",
+    String(DEFAULT_TRACE_BUFFER_MB)
+  ).option(
+    "--trace-trigger <expr>",
+    "Dump trigger: metric op value, OR-combined with commas (buffer mode). Metrics: cpu (%), mem (MB), loopdelay (ms), longtask (ms), fps, frametime (ms); ops > >= < <=. Examples: cpu>80, mem>=1500, loopdelay>200, fps<30, longtask>=150",
+    DEFAULT_TRACE_TRIGGER
+  ).option(
+    "--trace-cooldown <window>",
+    "Minimum interval between dumps (buffer mode)",
+    DEFAULT_TRACE_COOLDOWN
+  ).option("--trace-poll <window>", "Trigger polling interval (buffer mode)", DEFAULT_TRACE_POLL).option(
+    "--trace-budget <size>",
+    "Total trace budget + hard cap in MB (buffer mode)",
+    String(DEFAULT_TRACE_BUDGET_MB)
+  ).option("--netlog", "Capture Electron network metadata during the record window").option("--netlog-window <window>", "NetLog window: start, middle, or end", "start").option("--netlog-duration <window>", "NetLog capture duration").option(
+    "--netlog-budget <size>",
+    "Final netlog bundle artifact budget in MB (latency-priority trim target)",
+    String(DEFAULT_NETLOG_BUDGET_MB)
+  ).option(
+    "--netlog-capture-ceiling <size>",
+    "Raw netlog capture ceiling in MB forwarded to Chromium maxFileSize (safety stop, \u2260 final budget)",
+    String(DEFAULT_NETLOG_CAPTURE_CEILING_MB)
+  ).option("--bundle", "Write a self-contained perf bundle directory").option("--upload", "Upload the perf bundle through the desktop log upload path").option("--out <path>", "Output JSON file or directory").option("--scenario <label>", "Human-readable scenario label").option("--json", "Print JSON output").action(
+    async (opts) => {
+      try {
+        await getClient().requireRunning();
+        const activeCaptures = { trace: false, netLog: false };
+        const removeCaptureSignalCleanup = installRecordCaptureSignalCleanup(activeCaptures);
+        try {
+          const startedAt = Date.now();
+          const runId = createPerfRunId(startedAt);
+          const durationMs = parseDurationMs(opts.duration, 3e4);
+          assertRecordDurationAllowed(durationMs, opts.forceLong);
+          const intervalMs = parseDurationMs(opts.interval, 1e3);
+          const profileDurationMs = Math.min(
+            durationMs,
+            parseDurationMs(opts.profileDuration, 5e3)
+          );
+          const profileWindows = opts.profile && profileDurationMs > 0 ? buildCaptureWindows(
+            parseRecordWindows(opts.profileWindows, ["start"]),
+            durationMs,
+            profileDurationMs
+          ) : [];
+          const traceDurationMs = Math.min(
+            durationMs,
+            parseDurationMs(opts.traceDuration, durationMs)
+          );
+          const traceWindow = parseRecordWindow(opts.traceWindow, "start");
+          const traceMode = parseTraceMode(opts.traceMode);
+          const traceRequested = opts.trace === true;
+          const bufferTraceEnabled = traceRequested && traceMode === "buffer";
+          const windowTraceEnabled = traceRequested && traceMode === "window";
+          const traceBufferKb = Math.round(
+            parsePositiveMb(opts.traceBuffer, DEFAULT_TRACE_BUFFER_MB) * 1024
+          );
+          const traceBudgetBytes = Math.round(
+            parsePositiveMb(opts.traceBudget, DEFAULT_TRACE_BUDGET_MB) * 1024 * 1024
+          );
+          const traceTriggers = bufferTraceEnabled ? parseTraceTriggers(opts.traceTrigger ?? DEFAULT_TRACE_TRIGGER) : [];
+          const traceCooldownMs = parseDurationMs(opts.traceCooldown, 15e3);
+          const tracePollMs = parseDurationMs(opts.tracePoll, 1e3);
+          const netLogDurationMs = Math.min(
+            durationMs,
+            parseDurationMs(opts.netlogDuration, durationMs)
+          );
+          const netLogWindow = parseRecordWindow(opts.netlogWindow, "start");
+          const netLogBudgetBytes = Math.round(
+            parsePositiveMb(opts.netlogBudget, DEFAULT_NETLOG_BUDGET_MB) * 1024 * 1024
+          );
+          const netLogCaptureCeilingBytes = Math.round(
+            parsePositiveMb(opts.netlogCaptureCeiling, DEFAULT_NETLOG_CAPTURE_CEILING_MB) * 1024 * 1024
+          );
+          const shouldBundle = opts.bundle === true || opts.upload === true;
+          const bundleDir = shouldBundle ? resolvePerfBundleOutputDir(opts.out, runId) : void 0;
+          if (opts.upload && bundleDir) assertUploadBundleDir(bundleDir);
+          const outPath = shouldBundle ? path21.join(bundleDir, "run.json") : resolvePerfRunOutputPath(opts.out, runId);
+          const snapshots = [];
+          const endAt = startedAt + durationMs;
+          const recordRequestTimeoutMs = Math.max(15e3, profileDurationMs + 15e3);
+          const tracePath = windowTraceEnabled && bundleDir ? path21.join(bundleDir, "trace", "chromium-trace.json") : void 0;
+          const netLogSourcePath = opts.netlog && bundleDir ? path21.join(bundleDir, "net", "netlog.source.json") : void 0;
+          const netLogTrimmedPath = opts.netlog && bundleDir ? path21.join(bundleDir, "net", "netlog.json") : void 0;
+          const profileWindowPromises = profileWindows.map(async (captureWindow) => {
+            await waitForRecordOffset(startedAt, captureWindow.delayMs);
+            const [profile2, electronProfiles] = await Promise.all([
+              getClient().request(
+                "POST",
+                "/api/performance/profile/capture",
+                {
+                  durationMs: captureWindow.durationMs,
+                  cpu: true,
+                  heap: true,
+                  confirm: true,
+                  heapSamplingIntervalBytes: RECORD_HEAP_SAMPLING_INTERVAL_BYTES
+                },
+                captureWindow.durationMs + 15e3
+              ).then((result) => tagProfileCapture(result, "daemon", captureWindow.label)).catch(
+                (err) => tagProfileCapture(
+                  {
+                    available: false,
+                    process: "daemon",
+                    error: err instanceof Error ? err.message : String(err)
+                  },
+                  "daemon",
+                  captureWindow.label
+                )
+              ),
+              getClient().request(
+                "POST",
+                "/api/performance/electron-profile/capture",
+                {
+                  durationMs: captureWindow.durationMs,
+                  cpu: true,
+                  heap: true,
+                  main: true,
+                  renderers: true,
+                  confirm: true,
+                  heapSamplingIntervalBytes: RECORD_HEAP_SAMPLING_INTERVAL_BYTES
+                },
+                captureWindow.durationMs + 15e3
+              ).then(
+                (result) => (result.profiles ?? []).map(
+                  (profileCapture) => tagProfileCapture(profileCapture, "electron", captureWindow.label)
+                ).filter(Boolean)
+              ).catch(
+                (err) => [
+                  {
+                    available: false,
+                    process: `electron-${captureWindow.label}`,
+                    error: err instanceof Error ? err.message : String(err)
+                  }
+                ]
+              )
+            ]);
+            return {
+              profile: profile2,
+              electronProfiles
+            };
+          });
+          const tracePromise = windowTraceEnabled ? recordTraceWindow(
+            startedAt,
+            durationMs,
+            traceDurationMs,
+            traceWindow,
+            tracePath,
+            activeCaptures
+          ) : Promise.resolve(null);
+          const bufferTracePromise = bufferTraceEnabled ? recordBufferTrace({
+            startedAt,
+            endAt,
+            totalDurationMs: durationMs,
+            pollMs: tracePollMs,
+            cooldownMs: traceCooldownMs,
+            bufferKb: traceBufferKb,
+            budgetBytes: traceBudgetBytes,
+            triggers: traceTriggers,
+            bundleDir,
+            state: activeCaptures,
+            snapshots,
+            intervalMs
+          }) : Promise.resolve([]);
+          const netLogPromise = opts.netlog ? recordNetLogWindow(
+            startedAt,
+            durationMs,
+            netLogDurationMs,
+            netLogWindow,
+            netLogSourcePath,
+            activeCaptures,
+            netLogCaptureCeilingBytes
+          ) : Promise.resolve(null);
+          if (bufferTraceEnabled) {
+            const remaining = endAt - Date.now();
+            if (remaining > 0) await sleep2(remaining);
+          } else {
+            while (Date.now() <= endAt || snapshots.length === 0) {
+              const snapshot = await getClient().get(
+                "/api/performance/snapshot?fresh=true&electron=true",
+                recordRequestTimeoutMs
+              );
+              if (snapshot.sample) {
+                snapshots.push({
+                  ts: snapshot.sample.ts,
+                  sample: snapshot.sample,
+                  electron: snapshot.electron ?? null
+                });
+              }
+              const remaining = endAt - Date.now();
+              if (remaining <= 0) break;
+              await sleep2(Math.min(intervalMs, remaining));
+            }
+          }
+          const endedAt = Date.now();
+          const report = await getClient().get(
+            `/api/performance/report?since=${encodeURIComponent(String(startedAt))}&fresh=false`,
+            recordRequestTimeoutMs
+          );
+          const profileWindowResults = await Promise.all(profileWindowPromises);
+          const profile = profileWindowResults.map((result) => result.profile).find((result) => !!result) ?? null;
+          const traceResult = await tracePromise;
+          const traceFiles = await bufferTracePromise;
+          const netLogResult = await netLogPromise;
+          const profiles = profileWindowResults.flatMap((result) => [
+            ...result.profile ? [result.profile] : [],
+            ...result.electronProfiles
+          ]).filter(Boolean);
+          const stoppedTrace = traceResult?.stopped !== null && traceResult?.stopped !== void 0 ? traceResult.stopped : traceResult;
+          const stoppedNetLog = netLogResult?.stopped !== null && netLogResult?.stopped !== void 0 ? netLogResult.stopped : netLogResult;
+          let netLogTrim;
+          let resolvedNetLogPath = stoppedNetLog?.netLogPath;
+          let resolvedNetLogBytes = stoppedNetLog?.bytes;
+          if (opts.netlog && netLogResult && stoppedNetLog?.netLogPath && stoppedNetLog.available !== false && netLogSourcePath && netLogTrimmedPath) {
+            try {
+              const trimStats = await trimNetLog({
+                sourcePath: stoppedNetLog.netLogPath,
+                outputPath: netLogTrimmedPath,
+                budgetBytes: netLogBudgetBytes
+              });
+              netLogTrim = trimStats;
+              resolvedNetLogPath = netLogTrimmedPath;
+              resolvedNetLogBytes = trimStats.outputBytes;
+              await fs10.promises.rm(stoppedNetLog.netLogPath, { force: true }).catch(() => void 0);
+            } catch (err) {
+              netLogTrim = {
+                available: false,
+                error: err instanceof Error ? err.message : String(err)
+              };
+            }
+          }
+          const run = {
+            schemaVersion: 1,
+            run: {
+              id: runId,
+              scenario: opts.scenario,
+              startedAt,
+              endedAt,
+              durationMs: endedAt - startedAt,
+              sampleIntervalMs: intervalMs,
+              profile: process.env.MAVIS_PROFILE ?? null
+            },
+            snapshots,
+            report,
+            profile,
+            profiles,
+            trace: windowTraceEnabled && traceResult ? {
+              durationMs: traceResult.durationMs,
+              path: stoppedTrace?.tracePath,
+              available: stoppedTrace?.available,
+              error: stoppedTrace?.error
+            } : null,
+            ...bufferTraceEnabled ? { traces: traceFiles } : {},
+            netLog: netLogResult ? {
+              durationMs: netLogResult.durationMs,
+              path: resolvedNetLogPath,
+              available: stoppedNetLog?.available,
+              bytes: resolvedNetLogBytes,
+              error: stoppedNetLog?.error,
+              ...netLogTrim ? { trim: netLogTrim } : {}
+            } : null
+          };
+          let manifest;
+          let upload;
+          if (shouldBundle && bundleDir) {
+            manifest = writePerfBundle(bundleDir, run, run.trace?.path, run.netLog?.path);
+            if (opts.upload) {
+              upload = await getClient().request(
+                "POST",
+                "/api/performance/upload",
+                { path: bundleDir, confirm: true },
+                18e4
+              );
+              writeJsonFile(path21.join(bundleDir, "upload-result.json"), upload);
+              assertUploadSuccess(upload);
+            }
+          } else {
+            writePerfRunFile(outPath, run);
+          }
+          if (opts.json) {
+            console.log(
+              JSON.stringify({ path: outPath, bundleDir, manifest, upload, run }, null, 2)
+            );
+            return;
+          }
+          const traceBytes = traceFiles.reduce((sum, file) => sum + (file.bytes ?? 0), 0);
+          printTable([
+            ["Run ID", runId],
+            ["Samples", String(snapshots.length)],
+            ["Duration", `${String(run.run.durationMs)} ms`],
+            ["Output", outPath],
+            ["Bundle", bundleDir ?? "n/a"],
+            ...bufferTraceEnabled ? [
+              ["Trace Mode", "buffer"],
+              ["Trace Dumps", String(traceFiles.length)],
+              [
+                "Trace Total",
+                `${(traceBytes / 1024 / 1024).toFixed(1)} / ${(traceBudgetBytes / 1024 / 1024).toFixed(0)} MB`
+              ]
+            ] : [["Trace", run.trace?.path ?? "n/a"]],
+            ["NetLog", run.netLog?.path ?? "n/a"],
+            ["Upload ID", upload?.uploadId ?? "n/a"]
+          ]);
+        } finally {
+          removeCaptureSignalCleanup();
+          await stopActiveRecordCaptures(activeCaptures);
+        }
+      } catch (err) {
+        handleDaemonError(err);
+      }
+    }
+  );
+  const traceCmd = perfCmd.command("trace").description("Capture Chromium performance traces");
+  traceCmd.command("status").description("Show Electron trace recorder status").option("--json", "Print JSON output").action(async (opts) => {
+    try {
+      await getClient().requireRunning();
+      const status = await getClient().get("/api/performance/trace/status");
+      if (opts.json) {
+        console.log(JSON.stringify(status, null, 2));
+        return;
+      }
+      printTable([
+        ["Available", status.available === false ? "no" : "yes"],
+        ["Recording", status.recording ? "yes" : "no"],
+        ["Trace Path", status.tracePath ?? "n/a"],
+        ["Error", status.error ?? "n/a"]
+      ]);
+    } catch (err) {
+      handleDaemonError(err);
+    }
+  });
+  traceCmd.command("capture").description("Record a Chromium performance trace for a short window").option("--duration <window>", "Duration: 5000, 5s, 1m", "10s").option("--out <path>", "Trace output path").option("--json", "Print JSON output").action(async (opts) => {
+    try {
+      await getClient().requireRunning();
+      const durationMs = parseTraceDurationMs(opts.duration);
+      const result = await getClient().request(
+        "POST",
+        "/api/performance/trace/capture",
+        {
+          durationMs,
+          confirm: true,
+          ...opts.out ? { path: opts.out } : {}
+        },
+        durationMs + 15e3
+      );
+      if (opts.json) {
+        console.log(JSON.stringify(result, null, 2));
+        return;
+      }
+      const stopped = result.stopped ?? result;
+      printTable([
+        ["Duration", result.durationMs ? `${result.durationMs} ms` : opts.duration],
+        ["Trace Path", stopped?.tracePath ?? "n/a"],
+        ["Error", stopped?.error ?? result.error ?? "n/a"]
+      ]);
+    } catch (err) {
+      handleDaemonError(err);
+    }
+  });
+  const netLogCmd = perfCmd.command("netlog").description("Capture Electron network metadata");
+  netLogCmd.command("capture").description("Record Electron netLog metadata for a short window").option("--duration <window>", "Duration: 5000, 5s, 1m", "10s").option("--out <path>", "NetLog output path").option("--json", "Print JSON output").action(async (opts) => {
+    try {
+      await getClient().requireRunning();
+      const durationMs = parseTraceDurationMs(opts.duration);
+      const result = await getClient().request(
+        "POST",
+        "/api/performance/netlog/capture",
+        {
+          durationMs,
+          confirm: true,
+          ...opts.out ? { path: opts.out } : {}
+        },
+        durationMs + 15e3
+      );
+      if (opts.json) {
+        console.log(JSON.stringify(result, null, 2));
+        return;
+      }
+      const stopped = result.stopped ?? result;
+      printTable([
+        ["Duration", result.durationMs ? `${result.durationMs} ms` : opts.duration],
+        ["NetLog Path", stopped?.netLogPath ?? "n/a"],
+        ["Bytes", stopped?.bytes === void 0 ? "n/a" : String(stopped.bytes)],
+        ["Error", stopped?.error ?? result.error ?? "n/a"]
+      ]);
+    } catch (err) {
+      handleDaemonError(err);
+    }
+  });
+  perfCmd.command("upload").description("Upload an existing perf bundle directory through desktop log upload").requiredOption("--path <path>", "Perf bundle path under the local dataDir perf directory").option("--json", "Print JSON output").action(async (opts) => {
+    try {
+      await getClient().requireRunning();
+      const uploadPath = path21.resolve(opts.path);
+      const result = await getClient().request(
+        "POST",
+        "/api/performance/upload",
+        { path: uploadPath, confirm: true },
+        18e4
+      );
+      assertUploadSuccess(result);
+      if (opts.json) {
+        console.log(JSON.stringify(result, null, 2));
+        return;
+      }
+      printTable([
+        ["Success", result.success ? "yes" : "no"],
+        ["Upload ID", result.uploadId ?? "n/a"],
+        ["Path", result.path ?? "n/a"],
+        ["Files", result.fileCount === void 0 ? "n/a" : String(result.fileCount)],
+        ["Bytes", result.bytes === void 0 ? "n/a" : String(result.bytes)],
+        ["Error", result.error ?? "n/a"]
+      ]);
+    } catch (err) {
+      handleDaemonError(err);
+    }
+  });
+}
+
 // ../../packages/cli/src/index.ts
 init_ensure_daemon();
 init_format();
 init_attached_mode();
+
+// ../../packages/cli/src/electron-attached-daemon.ts
+init_dist();
+import { readFileSync as readFileSync8 } from "node:fs";
+import path22 from "node:path";
+var MAX_TCP_PORT2 = 65535;
+function discoverElectronAttachedPort({
+  defaultDataDir,
+  currentDataDir,
+  currentRunningPort
+}) {
+  if (currentDataDir !== defaultDataDir && currentRunningPort !== null) {
+    return null;
+  }
+  try {
+    const pidRaw = readFileSync8(path22.join(defaultDataDir, "daemon.pid"), "utf-8");
+    const pidInfo = parsePidFile(pidRaw);
+    if (pidInfo?.owner !== "electron" || !isPidAlive2(pidInfo.pid)) return null;
+    const portRaw = readFileSync8(path22.join(defaultDataDir, "daemon.port"), "utf-8");
+    return parseDaemonPort(portRaw);
+  } catch {
+    return null;
+  }
+}
+function isPidAlive2(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function parseDaemonPort(raw) {
+  const port = Number(raw.trim());
+  if (!Number.isInteger(port) || port <= 0 || port > MAX_TCP_PORT2) {
+    return null;
+  }
+  return port;
+}
+
+// ../../packages/cli/src/index.ts
 var [cMaj = 0] = process.versions.node.split(".").map(Number);
 if (cMaj < 18) {
   console.error(`\x1B[31m\u274C Node.js v${process.versions.node} \u7248\u672C\u8FC7\u4F4E\uFF0Cmavis \u9700\u8981 >= v18\x1B[0m`);
   console.error("   \u8BF7\u6267\u884C: nvm use default  \u6216  nvm install 20 && nvm use 20");
   process.exit(1);
 }
-var cliVersion = true ? "3.0.35" : createRequire(import.meta.url)("../package.json").version;
+var cliVersion = true ? "3.0.46" : createRequire(import.meta.url)("../package.json").version;
 var cliChannel = true ? "electron" : "dev";
-var invokedName = path19.basename(process.argv[1] ?? "mavis").replace(/\.(js|mjs|cjs)$/, "");
+var invokedName = path23.basename(process.argv[1] ?? "mavis").replace(/\.(js|mjs|cjs)$/, "");
 var cliName = ["mavis", "minimax"].includes(invokedName) ? invokedName : "mavis";
+function parseExplicitPort(raw) {
+  if (!raw) return null;
+  const port = Number(raw);
+  if (!Number.isInteger(port) || port <= 0 || port > 65535) return null;
+  return port;
+}
+function getLifecycleProbePort(opts) {
+  if (isAttachedMode()) return getAttachedPort();
+  return parseExplicitPort(opts?.port) ?? getRunningDaemonPort() ?? resolvePort();
+}
 var program2 = new Command();
 program2.name(cliName).description("Mavis CLI \u2014 manage your local AI agents").version(cliVersion).option("-p, --profile <name>", "Use a named profile (isolated data dir, port, db)").option("--port <number>", "Override daemon port").option("--data-dir <path>", "Override daemon data directory").option("--no-web", "Do not open browser after starting").option("--no-service", "Skip launchd/systemd service management (default for dev builds)").option(
   "--allowed-tools <tools>",
@@ -46864,29 +49556,28 @@ program2.name(cliName).description("Mavis CLI \u2014 manage your local AI agents
     resetClient();
   }
   if (!opts.port && !opts.profile && !opts.dataDir) {
-    const defaultDataDir = path19.join(os10.homedir(), ".mavis");
+    const defaultDataDir = path23.join(os10.homedir(), BRAND.APP_DIR);
     let currentDataDir;
     try {
       currentDataDir = getConfig().dataDir;
     } catch {
       currentDataDir = defaultDataDir;
     }
-    const hasOwnDaemon = currentDataDir === defaultDataDir || getRunningDaemonPort() !== null;
-    if (!hasOwnDaemon) {
-      try {
-        const pidRaw = readFileSync8(path19.join(defaultDataDir, "daemon.pid"), "utf-8");
-        const pidInfo = parsePidFile(pidRaw);
-        if (pidInfo?.owner === "electron") {
-          const portRaw = readFileSync8(path19.join(defaultDataDir, "daemon.port"), "utf-8");
-          const port = parseInt(portRaw.trim(), 10);
-          if (!isNaN(port)) {
-            setAttachedPort(port);
-            resetConfig();
-            resetClient();
-          }
-        }
-      } catch {
-      }
+    let currentRunningPort = null;
+    try {
+      currentRunningPort = getRunningDaemonPort();
+    } catch {
+      currentRunningPort = null;
+    }
+    const attachedPort2 = discoverElectronAttachedPort({
+      defaultDataDir,
+      currentDataDir,
+      currentRunningPort
+    });
+    if (attachedPort2 !== null) {
+      setAttachedPort(attachedPort2);
+      resetConfig();
+      resetClient();
     }
   }
 }).action(async (_options, command) => {
@@ -46899,10 +49590,10 @@ program2.name(cliName).description("Mavis CLI \u2014 manage your local AI agents
   console.log(`  Node.js:  v${process.versions.node}`);
   console.log(`  Mavis:    v${cliVersion} (${cliChannel})`);
   console.log(`  \u542F\u52A8\u4E2D...`);
-  const { spawned } = await ensureDaemon({
-    skipService: opts.service === false ? true : void 0
+  const { spawned, port } = await ensureDaemon({
+    skipService: opts.service === false ? true : void 0,
+    explicitPort: parseExplicitPort(opts.port) ?? void 0
   });
-  const port = resolvePort();
   const { logsDir } = getConfig();
   const profileHealthy = await waitForHealth(3e3, 200, port);
   if (!profileHealthy) {
@@ -46947,11 +49638,13 @@ registerUsageCommands(program2);
 registerHookCommands(program2);
 registerBrowserCommands(program2);
 registerInternalSkillCommands(program2);
+registerPerfCommands(program2);
 program2.command("version").description("Show Mavis version info").action(async () => {
   console.log(`${cliName} v${cliVersion} (${cliChannel})`);
-  const port = getRunningDaemonPort() ?? resolvePort();
+  const opts = program2.opts();
+  const port = getLifecycleProbePort(opts);
   try {
-    const res = await fetch(`http://127.0.0.1:${String(port)}/health`, {
+    const res = await fetch(`http://127.0.0.1:${String(port)}/mavis/health`, {
       signal: AbortSignal.timeout(2e3)
     });
     if (res.ok) {

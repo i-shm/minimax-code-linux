@@ -18,7 +18,7 @@ cron jobs, IM routing, skills, and team plans. The default data directory is `~/
 | 已有 MCP 的 list / tools / call / auth / sync | Delegate to `mcp-cli` |
 | 飞书 / Lark 业务操作 | Delegate to `lark-tools` |
 | 创建 / 改进一个 skill | Delegate to `skill-creator` |
-| worktree / 分支开发流程 | Delegate to `worktree-management` |
+| worktree / 运行位置 / 分支开发流程 | Guide the user to start a new chat and pick the desired run location / worktree in the UI. The current chat's run location cannot be changed. If the user explicitly asks the agent to create or switch a worktree from the command line, follow the current repo's docs or the user's command; do not load a built-in worktree workflow skill by default. |
 | MR / CI / review gate | Delegate to `gitlab-mr-review` |
 | 手动测试 / 验收测试 | Delegate to `manual-test` |
 | 多 agent 协作 / Team Plan | Delegate to `mavis-team` skill |

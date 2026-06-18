@@ -4,6 +4,10 @@ description: >-
   Plan before execution. Load when the task has meaningful ambiguity, multiple valid approaches, or the user explicitly wants to discuss first.
   Trigger: '先规划一下', '讨论方案', '怎么做', 'what's the approach', 'help me think through', '先别写代码'.
   Skip for trivial or fully-specified tasks.
+descriptions:
+  zh-Hans: "先规划再执行，适用于存在明显不确定性、多种方案，或用户明确要求先讨论的任务。"
+displayNames:
+  zh-Hans: "计划模式"
 ---
 
 # Plan Mode

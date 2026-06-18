@@ -194,7 +194,7 @@ For each unique built-in `skillRef`, plan a worker task:
 ```yaml
 - id: builtin-mr-<sanitized-skill-name>
   description: "Built-in skill MR: <skillRef> — <one-line problem>"
-  skills: [worktree-management, mr-workflow]
+  skills: [mr-workflow]
   prompt: |
     You are opening a GitLab MR to evolve a built-in skill. Follow this
     procedure exactly — do NOT auto-merge.
@@ -211,11 +211,13 @@ For each unique built-in `skillRef`, plan a worker task:
       ...
 
     Steps:
-    1. In <sourceRepo>, run `bash scripts/create-worktree.sh evolve/skill-<skill-name>-<YYYYMMDD>`.
-       Branch name pattern: `evolve/skill-<skill-name>-<YYYYMMDD>` so MRs are
-       easy to identify and don't collide across nights.
-    2. In the new worktree, edit the SKILL.md per the signal evidence. Apply
-       the smallest change that resolves the reported problem.
+    1. Prepare the editing location according to <sourceRepo>'s own project
+       instructions. If that repo requires a worktree, use its documented
+       script or command (for agent-archon, branch pattern
+       `evolve/skill-<skill-name>-<YYYYMMDD>` keeps MRs identifiable). If the
+       repo has no worktree requirement, do not create one by default.
+    2. Edit the SKILL.md per the signal evidence. Apply the smallest change
+       that resolves the reported problem.
     3. Sync the runtime copy: copy the modified file from
        `<builtinSkillSourcePath>/<skill-name>/SKILL.md` to the same relative
        path under `<builtinSkillRuntimePath>` so the running daemon sees the
@@ -261,7 +263,7 @@ For each unique built-in `skillRef`, plan a worker task:
       - Never run `git add .` or `git add -A` — add only the files you edited.
       - Never use `--no-verify` to bypass hooks.
       - If any step fails, stop and report the failure with the full error
-        message; do NOT delete the worktree on failure.
+        message; do NOT delete user-controlled run locations or worktrees on failure.
 ```
 
 After the worker reports back:

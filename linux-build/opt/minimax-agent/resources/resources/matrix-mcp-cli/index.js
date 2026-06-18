@@ -13887,7 +13887,7 @@ var Server = class extends Protocol {
   }
 };
 
-// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-1780296200892/src/errors.ts
+// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-JZlkKR/src/errors.ts
 function toMcpError(status, body, path) {
   let snippet = body.slice(0, 500);
   try {
@@ -13899,7 +13899,7 @@ function toMcpError(status, body, path) {
   return new Error(`[matrix-mcp-cli:${tag}] POST ${path} \u2192 ${status} ${snippet}`);
 }
 
-// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-1780296200892/src/platform.ts
+// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-JZlkKR/src/platform.ts
 function getPlatform() {
   const override = process.env.MATRIX_CLI_PLATFORM_OVERRIDE;
   if (override === "win" || override === "mac" || override === "linux") {
@@ -13953,7 +13953,7 @@ function isFileTooLargeError(text) {
   return text.includes("[matrix-mcp-cli:file-too-large]");
 }
 
-// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-1780296200892/src/client.ts
+// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-JZlkKR/src/client.ts
 var TOOLS_PATH = "/mavis/api/v1/mcp/tools";
 var MATRIX_USER_AGENT = "MiniMaxAgent";
 var MatrixClient = class {
@@ -14125,7 +14125,7 @@ function asStringArray(value) {
   return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : null;
 }
 
-// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-1780296200892/src/path-uri.ts
+// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-JZlkKR/src/path-uri.ts
 import { fileURLToPath } from "node:url";
 function stripFileUri(val) {
   if (!val.startsWith("file://")) return val;
@@ -14140,7 +14140,7 @@ function stripFileUri(val) {
   }
 }
 
-// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-1780296200892/src/tools/catalog-overrides.ts
+// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-JZlkKR/src/tools/catalog-overrides.ts
 var OVERRIDES = [
   // 2026-05: matrix_listen_audio's name conflated speech-to-text transcription
   // with the free-form Q&A tool matrix_audios_understand. Models couldn't tell
@@ -14212,7 +14212,7 @@ function applyCatalogOverrides(tools) {
   return out;
 }
 
-// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-1780296200892/src/upload.ts
+// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-JZlkKR/src/upload.ts
 import { createReadStream, statSync } from "node:fs";
 import { basename, extname } from "node:path";
 import { Readable } from "node:stream";
@@ -14332,7 +14332,7 @@ function sanitizeChars(part) {
   return part.replace(/[^A-Za-z0-9_-]/g, "_");
 }
 
-// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-1780296200892/src/tools/generate-image.ts
+// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-JZlkKR/src/tools/generate-image.ts
 var generateImageHandler = {
   name: "matrix_generate_image",
   async handle(args, client) {
@@ -14380,7 +14380,7 @@ async function resolveOneInputFile(client, entry) {
   return result.url;
 }
 
-// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-1780296200892/src/tools/media-info.ts
+// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-JZlkKR/src/tools/media-info.ts
 import { readFileSync, statSync as statSync2 } from "node:fs";
 async function processMediaInfo(client, info) {
   if (!info.file && !info.url && !info.data) {
@@ -14503,7 +14503,7 @@ var mediaInfoToolHandlers = new Map(
   MEDIA_INFO_TOOLS.map((t) => [t.name, makeMediaInfoHandler(t.name, t.endpoint, t.selector)])
 );
 
-// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-1780296200892/src/tools/upload-to-cdn.ts
+// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-JZlkKR/src/tools/upload-to-cdn.ts
 import { readFileSync as readFileSync2, statSync as statSync3 } from "node:fs";
 import { basename as basename2 } from "node:path";
 var uploadToCdnHandler = {
@@ -14542,14 +14542,14 @@ var uploadToCdnHandler = {
   }
 };
 
-// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-1780296200892/src/tools/index.ts
+// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-JZlkKR/src/tools/index.ts
 var localToolHandlers = new Map([
   ...mediaInfoToolHandlers,
   [uploadToCdnHandler.name, uploadToCdnHandler],
   [generateImageHandler.name, generateImageHandler]
 ]);
 
-// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-1780296200892/src/server.ts
+// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-JZlkKR/src/server.ts
 var TOOL_NAME_PREFIX = "matrix_";
 var KNOWN_TOOLS = /* @__PURE__ */ new Set([
   "matrix_web_search",
@@ -14847,7 +14847,7 @@ function formatErr(err) {
   return String(err);
 }
 
-// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-1780296200892/src/index.ts
+// ../../../../../../../private/var/folders/7h/zsy13mhj153164r924v9kqrc0000gn/T/matrix-mcp-cli-clone-JZlkKR/src/index.ts
 function logAndExit(phase, err) {
   const detail = err instanceof Error ? err.stack ?? `${err.name}: ${err.message}` : String(err);
   process.stderr.write(`[matrix-mcp-cli:${phase}] ${detail}

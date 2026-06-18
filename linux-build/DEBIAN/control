@@ -1,5 +1,5 @@
 Package: minimax-agent
-Version: 3.0.35
+Version: 3.0.46
 Section: network
 Priority: optional
 Architecture: amd64

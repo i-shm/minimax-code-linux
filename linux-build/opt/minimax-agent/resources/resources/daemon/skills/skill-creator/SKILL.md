@@ -5,6 +5,10 @@ description: |
   create a skill, turn a repeated workflow into a skill, or build a new reusable procedure.
   Do not use for improving or fixing an existing skill (use skill-refiner instead),
   or when the user only wants to run a skill or learn what skills exist.
+descriptions:
+  zh-Hans: "创建新的 Mavis skill，用短 eval 循环把重复工作流沉淀为可复用流程。"
+displayNames:
+  zh-Hans: "创建 Skill"
 ---
 
 # Skill Creator
@@ -78,6 +82,7 @@ Use the three-question test to decide where the skill lives:
 - Remove README-style teaching, feature tours, redundant trigger lists, and API-overview prose.
 - Keep only one or two canonical examples.
 - Follow `references/skill-template.md`, `references/description-rubric.md`, and `references/anti-patterns.md`.
+- **Windows adaptation**: if the skill contains shell commands, scripts, or `python3` references, add a `## Windows (win32) platform notes` section with PowerShell equivalents or cross-platform alternatives. Pure-process skills (no shell commands) can skip this.
 
 Write the skill into the location determined in step 2:
 

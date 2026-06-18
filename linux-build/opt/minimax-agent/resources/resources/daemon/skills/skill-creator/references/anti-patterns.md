@@ -55,7 +55,7 @@ description: PDF, text, extract, OCR, parse, document, file, read
 
 **为什么是反模式**：
 - 没说"什么时候用"，LLM 看了关键词命中就触发，不管语境
-- 没说"什么时候不用"，会和近义 skill（如 minimax-pdf）冲突触发
+- 没说"什么时候不用"，会和近义 skill（如 pdf）冲突触发
 
 **怎么改**：见 `description-rubric.md`，必须含 What + When + Near misses。
 
@@ -136,3 +136,14 @@ description: PDF, text, extract, OCR, parse, document, file, read
 - Mavis 自己会发现并加载 skill，不需要 install 脚本
 
 **怎么改**：skill 包里不放 install.sh。如果真需要外部依赖，在 SKILL.md 的 `## Setup`（仅本次需要时才有这一节）里明确写"请手动 X"。
+
+## 11. Shell 命令只写 bash 版本，不做 Windows 适配
+
+**反例来源**：早期 skill 只写 `python3 scripts/xxx.sh | grep "Page size"` 这类 bash 命令，Windows 用户跑不起来。
+
+**为什么是反模式**：
+- Mavis 在 Windows 上直接用 PowerShell 执行命令，没有 Unix 兜底层
+- `python3`（Windows 上通常是 `python`）、`grep`、`sed`、`/tmp/` 等在 PowerShell 里不存在或行为不同
+- 用户不应该为了跑一个 skill 还要自己翻译命令
+
+**怎么改**：如果 skill 包含 shell 命令、脚本调用或 `python3` 引用，加 `## Windows (win32) platform notes` 段落，提供 PowerShell 等价命令或跨平台替代方案。纯流程 skill 可跳过。

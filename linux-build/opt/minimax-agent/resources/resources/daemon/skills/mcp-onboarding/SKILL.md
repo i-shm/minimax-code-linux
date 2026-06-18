@@ -1,6 +1,8 @@
 ---
 name: mcp-onboarding
 description: "Onboard a new MCP integration — collect config, handle auth, and sync skills without asking the user to run manual setup commands."
+descriptions:
+  zh-Hans: "接入新的 MCP 集成，收集配置、处理认证并同步 skills，无需用户手动执行设置命令。"
 ---
 
 # MCP Onboarding

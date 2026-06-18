@@ -4,6 +4,8 @@ description: >-
   Debug why a session/agent/daemon behaved incorrectly. Load when user mentions a session id (ses_/mvs_*),
   wants logs, root-cause analysis, or asks about stuck runs, retries, permissions, or recovery.
   Keywords: 排查, 调试, 卡住, 为什么, log, debug, inspect, retry, recovery.
+descriptions:
+  zh-Hans: "排查 session、agent 或 daemon 行为异常，分析日志、卡住、重试、权限和恢复问题。"
 ---
 
 # Mavis Doctor
@@ -118,3 +120,37 @@ This fallback is **mandatory** — local-proxy logs are the richest source of LL
 - `Next action`: smallest confirming or fixing step
 
 If you used the bakery, return artifact paths, not only prose.
+
+## Windows (win32) platform notes
+
+The bakery script (`bin/mavis-session-log`) and `install.sh` are bash scripts. On Windows, invoke
+them via **Git Bash**:
+
+```powershell
+# Install the bakery command
+bash install.sh
+
+# Run the bakery
+bash bin/mavis-session-log mvs_abc123def456
+bash bin/mavis-session-log --data-dir "$env:USERPROFILE\.mavis" ses_xyz789
+
+# Manual jq fallback (if bakery fails)
+bash -c 'jq -c --arg sid ses_xyz '\''select(.headers["x-mavis-session-id"] == $sid)'\'' "$HOME"/.mavis/logs/local-proxy-*.jsonl'
+```
+
+**Additional tool requirements on Windows:**
+
+| Tool | Required for | Install |
+|---|---|---|
+| `jq` | Bakery + manual fallback | `winget install jqlang.jq` |
+| `sqlite3` | Resolving `mvs_` → `ses_` IDs | `winget install SQLite.SQLite` |
+
+After install, refresh PATH:
+```powershell
+$env:PATH = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+```
+
+The grep/sed/head/tail commands in `references/session-playbook.md` all work inside `bash -c "..."`.
+
+**If Git Bash or any tool is missing**, read the `mavis` skill's
+`references/windows-tool-bootstrap.md` for the full detection + auto-install table.

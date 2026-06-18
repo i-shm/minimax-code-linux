@@ -11,6 +11,8 @@ description: >-
   says "check my schedule", "send a message to someone", "find a doc about X", or "look up who
   Zhang San is", this skill applies. Also use it when encountering 401 / LARK_USER_AUTH_REQUIRED
   errors — this skill handles the auth flow.
+descriptions:
+  zh-Hans: "通过官方 lark-cli 使用飞书/Lark 全能力，包括日程、任务、消息、通讯录、文档和多维表格。"
 ---
 
 # Feishu / Lark Tools
@@ -299,3 +301,21 @@ Do NOT rely on the quick examples above — they omit critical formatting and co
   window for each module they touch.
 - **Bitable requires tokens from the URL** — you need the `appToken` (from the table URL)
   and `tableId` (from `lark-cli base +table-list`).
+
+## Windows note on cli-skills examples
+
+The per-domain reference files in `cli-skills/` (lark-mail, lark-whiteboard, lark-slides, etc.)
+show bash heredoc patterns like `cat > file << 'EOF'` for writing JSON payloads. On Windows:
+
+- Use the **Write tool** (preferred) to write JSON content to a file, then pass the file path to
+  `lark-cli`.
+- Or use PowerShell with a multi-line here-string (the `@'` and `'@` tokens must each be on their
+  own line):
+  ```powershell
+  @'
+  {"key": "value"}
+  '@ | Set-Content -Path ./patch.json -Encoding UTF8
+  ```
+- Or wrap in `bash -c "cat > file << 'EOF' ... EOF"` if Git Bash is available.
+
+The `lark-cli` binary itself is cross-platform and works identically in both PowerShell and bash.

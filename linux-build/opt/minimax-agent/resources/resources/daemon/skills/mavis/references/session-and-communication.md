@@ -33,17 +33,19 @@ Important outputs:
 - `info`: session ID, agent, title, workspace, type, framework, created/updated timestamps
 - `messages`: role, timestamp, message ID, content preview, tool calls
 
-Rotation rule (rotate v2): use `mavis session rotate` when context quality degrades or the main
-session is too large. The rotate flow is **synchronous and requires a handoff file** —
-`--handoff-file <path>` is mandatory. The path must point to an existing, non-empty markdown file
-≤ 1 MB; the daemon ingests it as the kick-off context for the new session and archives the old
-one. Typical pattern when the model itself decides to rotate (or after `<context-pressure>` fires):
+Rotation rule (rotate v2): `mavis session rotate` is user-initiated only — the daemon no
+longer nudges the model to suggest a rotation (the `<context-pressure>` system-reminder was
+removed). Run it when the user explicitly asks to reset the conversation or when an external
+trigger (UI rotate button, automation) fires. The rotate flow is **synchronous and requires a
+handoff file** — `--handoff-file <path>` is mandatory. The path must point to an existing,
+non-empty markdown file ≤ 1 MB; the daemon ingests it as the kick-off context for the new
+session and archives the old one. Typical pattern when the user asks to rotate:
 
 ```bash
 # 1. write a concise handoff to a temp file (Goal / Progress / Modified Files / Key Decisions /
 #    Open Questions / Next Steps)
 # 2. then call rotate with the path
-mavis session rotate --handoff-file /tmp/handoff.md --reason context_pressure
+mavis session rotate --handoff-file /tmp/handoff.md --reason user_request
 ```
 
 If you cannot write the handoff yourself (e.g. you are an external trigger such as the UI rotate
