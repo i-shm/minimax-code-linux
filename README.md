@@ -35,7 +35,7 @@ sudo ./setup.sh
 minimax-agent
 ```
 
-## Screenshots
+## Screenshots (Older Version - will update new one shortly)
 
 <p align="center">
   <img src="Screenshots/screenshot-01.png" alt="MiniMax Agent main interface" width="80%">
