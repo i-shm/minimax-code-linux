@@ -37,7 +37,7 @@ mkdir -p "$OUTPUT_DIR"
 chmod 755 "$OUTPUT_DIR"
 
 # Check for required tools
-echo "[1/4] Checking build dependencies..."
+echo "[1/6] Checking build dependencies..."
 MISSING_TOOLS=()
 command -v dpkg-deb >/dev/null 2>&1 || MISSING_TOOLS+=("dpkg-dev")
 command -v fakeroot >/dev/null 2>&1 || MISSING_TOOLS+=("fakeroot")
@@ -54,7 +54,7 @@ echo "  All dependencies satisfied."
 
 # Clean previous builds with safety checks
 echo ""
-echo "[2/4] Cleaning previous builds..."
+echo "[2/6] Cleaning previous builds..."
 if [ -f "$OUTPUT_DIR/$PACKAGE_NAME" ]; then
     # Verify OUTPUT_DIR is within SCRIPT_DIR before deletion
     case "$OUTPUT_DIR" in
@@ -91,14 +91,86 @@ if [ -f "$BUILD_DIR/usr/bin/minimax-agent" ]; then
     chmod 755 "$BUILD_DIR/usr/bin/minimax-agent"
 fi
 
+# Ensure resources are in place
+RELEASE_DIR="/tmp/minimax-app/resources"
+ASAR_UNPACKED_SRC="$RELEASE_DIR/app.asar.unpacked"
+ASAR_UNPACKED_DST="$BUILD_DIR/opt/minimax-agent/resources/app.asar.unpacked"
+
+echo ""
+echo "[3/6] Preparing native modules..."
+
+# 1. Copy app.asar from Windows release source if present
+if [ ! -f "$BUILD_DIR/opt/minimax-agent/resources/app.asar" ]; then
+    if [ -f "$RELEASE_DIR/app.asar" ]; then
+        echo "  Copying app.asar from Windows release..."
+        cp "$RELEASE_DIR/app.asar" "$BUILD_DIR/opt/minimax-agent/resources/app.asar"
+    else
+        echo "  WARNING: app.asar not found at $RELEASE_DIR"
+        echo "  Run the extract step to unpack the Windows installer first."
+    fi
+fi
+
+# 2. Copy app.asar.unpacked (native modules) from Windows release
+if [ ! -d "$ASAR_UNPACKED_DST" ]; then
+    if [ -d "$ASAR_UNPACKED_SRC" ]; then
+        echo "  Copying app.asar.unpacked from Windows release..."
+        cp -r "$ASAR_UNPACKED_SRC" "$ASAR_UNPACKED_DST"
+    else
+        echo "  WARNING: app.asar.unpacked not found at $ASAR_UNPACKED_SRC"
+    fi
+fi
+
+# 3. Rebuild better-sqlite3 for Electron's Node.js ABI if source is available
+if [ -d "$ASAR_UNPACKED_DST/node_modules/better-sqlite3" ]; then
+    echo "  Rebuilding better-sqlite3 for Electron v33.2.0 ABI..."
+    cd "$ASAR_UNPACKED_DST/node_modules/better-sqlite3"
+    if command -v npx >/dev/null 2>&1; then
+        # Try prebuild-install first (downloads prebuilt linux binary)
+        npx --yes prebuild-install 2>/dev/null || true
+        
+        # Check if the module loads with Electron
+        if ELECTRON_RUN_AS_NODE=1 /opt/minimax-agent/electron -e \
+            "try { require('./build/Release/better_sqlite3.node'); console.log('OK'); } catch(e) { console.log('NEEDS_REBUILD'); }" 2>/dev/null | grep -q "OK"; then
+            echo "  better-sqlite3 native module OK."
+        else
+            echo "  Rebuilding better-sqlite3 for Electron ABI..."
+            # Install better-sqlite3 fresh in temp dir and rebuild for Electron
+            TEMP_DIR="/tmp/electron-rebuild-temp"
+            rm -rf "$TEMP_DIR"
+            mkdir -p "$TEMP_DIR"
+            cat > "$TEMP_DIR/package.json" << 'TMPJSON'
+{
+  "name": "electron-rebuild-temp",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "better-sqlite3": "12.11.1"
+  }
+}
+TMPJSON
+            cd "$TEMP_DIR"
+            npm install --ignore-scripts 2>/dev/null
+            npx @electron/rebuild -o better-sqlite3 -v 33.2.0 -f 2>&1
+            if [ -f "$TEMP_DIR/node_modules/better-sqlite3/build/Release/better_sqlite3.node" ]; then
+                cp "$TEMP_DIR/node_modules/better-sqlite3/build/Release/better_sqlite3.node" \
+                   "$ASAR_UNPACKED_DST/node_modules/better-sqlite3/build/Release/better_sqlite3.node"
+                echo "  better-sqlite3 rebuilt for Electron ABI."
+            fi
+            rm -rf "$TEMP_DIR"
+        fi
+    fi
+    cd "$SCRIPT_DIR"
+fi
+echo "  Native modules ready."
+
 # Build the package
 echo ""
-echo "[3/4] Building package..."
+echo "[4/6] Building package..."
 GZIP=-1 dpkg-deb -Zgzip -z1 --build "$BUILD_DIR" "$OUTPUT_DIR/$PACKAGE_NAME"
 
 # Verify the package
 echo ""
-echo "[4/4] Verifying package..."
+echo "[5/6] Verifying package..."
 if [ -f "$OUTPUT_DIR/$PACKAGE_NAME" ]; then
     echo "  Package created successfully!"
     ls -lh "$OUTPUT_DIR/$PACKAGE_NAME"
@@ -106,6 +178,18 @@ if [ -f "$OUTPUT_DIR/$PACKAGE_NAME" ]; then
     echo "  Install with: sudo dpkg -i $OUTPUT_DIR/$PACKAGE_NAME"
 else
     echo "  Error: Package creation failed!"
+    exit 1
+fi
+
+# Verify the daemon starts correctly
+echo ""
+echo "[6/6] Verifying daemon startup..."
+DAEMON_JS="$BUILD_DIR/opt/minimax-agent/resources/resources/daemon/daemon.js"
+if [ -f "$DAEMON_JS" ]; then
+    echo "  Daemon entry point found."
+    echo "  Install the .deb to test: sudo dpkg -i $OUTPUT_DIR/$PACKAGE_NAME"
+else
+    echo "  Error: Daemon entry point not found!"
     exit 1
 fi
 
