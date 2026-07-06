@@ -145,3 +145,9 @@ This is an unofficial port. MiniMax is not affiliated with this project. The ori
 ---
 
 *Last updated: June 2026*
+## Troubleshooting
+
+### Backend service fails to start after login
+- Ensure Node.js >= 18 is installed.
+- Check daemon logs: `journalctl --user -u mavis.service` or `~/.mavis/logs/daemon-spawn.log`.
+- If another daemon owns the data directory, restart the service or remove stale lock files under `~/.mavis`.
