@@ -35,6 +35,34 @@ sudo ./setup.sh
 minimax-agent
 ```
 
+## Nix (x86_64 Linux)
+
+The flake provides an unprivileged, user-scoped package for x86_64 Linux. It treats the release `.deb` as application data and supplies a separately pinned Electron runtime; both downloaded inputs are fixed by hash in [`nix/minimax-agent.nix`](nix/minimax-agent.nix).
+
+Prerequisites:
+
+- Nix with flakes enabled
+- An x86_64 Linux desktop session (the initial target is non-NixOS hosts; NixOS is not yet a supported target)
+
+```bash
+git clone https://github.com/unn-Known1/minimax-agent-linux.git
+cd minimax-agent-linux
+
+# Build the pinned package, then start it from the result.
+nix build .#minimax-agent
+./result/bin/minimax-agent
+
+# Or build and run in one command.
+nix run .
+```
+
+### Scope and security notes
+
+- The Nix package does **not** run `sudo`, `apt`, `dpkg -i`, `setup.sh`, `npm install`, or `npm rebuild`. It does not enable systemd lingering, configure opencode, or register a global OAuth/protocol handler.
+- The launcher does not use Electron's `--no-sandbox` flag. It disables only Electron's setuid sandbox helper, which this package does not install setuid.
+- The packaged application is still an opaque, unofficial upstream binary. Nix verifies the build inputs, but it does not sandbox the launched application's access to your user account or network.
+- To update, change the release and Electron versions and their hashes together in `nix/minimax-agent.nix`, then rebuild. Review the upstream artifacts before doing so.
+
 ## Screenshots [ Working everything in new version ]
 
 <p align="center">
