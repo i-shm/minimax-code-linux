@@ -9,9 +9,11 @@
 
 > **Note**: This is an **unofficial port** of MiniMax Agent for Linux. MiniMax does not currently offer an official Linux desktop application. This project aims to bring the MiniMax Agent experience to Linux users.
 
+> **Fork status**: This fork maintains the Nix build support. Clone this repository and report issues here; the current `.deb` artifact remains published by the original port's release.
+
 ## Download .deb Package
 
-**Direct Download:** Click on the `.deb` file in the `releases/` folder above, or use:
+**Direct Download:** Download the `.deb` artifact from the original port's release:
 ```bash
 wget https://github.com/unn-Known1/minimax-agent-linux/releases/download/v3.0.46/minimax-agent_3.0.46_amd64.deb
 ```
@@ -19,7 +21,7 @@ wget https://github.com/unn-Known1/minimax-agent-linux/releases/download/v3.0.46
 ## Installation
 
 ```bash
-# Download the package
+# Download the upstream release package
 wget https://github.com/unn-Known1/minimax-agent-linux/releases/download/v3.0.46/minimax-agent_3.0.46_amd64.deb
 
 # Install
@@ -45,8 +47,8 @@ Prerequisites:
 - An x86_64 Linux desktop session (the initial target is non-NixOS hosts; NixOS is not yet a supported target)
 
 ```bash
-git clone https://github.com/unn-Known1/minimax-agent-linux.git
-cd minimax-agent-linux
+git clone https://github.com/i-shm/minimax-code-linux.git
+cd minimax-code-linux
 
 # Build the pinned package, then start it from the result.
 nix build .#minimax-agent
@@ -151,8 +153,8 @@ xdg-mime default minimax-agent.desktop x-scheme-handler/minimax
 ## Building from Source
 
 ```bash
-git clone https://github.com/unn-Known1/minimax-agent-linux.git
-cd minimax-agent-linux
+git clone https://github.com/i-shm/minimax-code-linux.git
+cd minimax-code-linux
 chmod +x build.sh
 sudo ./build.sh
 ```
@@ -168,11 +170,11 @@ This is an unofficial port. MiniMax is not affiliated with this project. The ori
 ## Links
 
 - [Official MiniMax Agent](https://agent.minimax.io)
-- [Report an Issue](https://github.com/unn-Known1/minimax-agent-linux/issues)
+- [Report an Issue](https://github.com/i-shm/minimax-code-linux/issues)
 
 ---
 
-*Last updated: June 2026*
+*Last updated: July 2026*
 ## Troubleshooting
 
 ### Backend service fails to start after login
