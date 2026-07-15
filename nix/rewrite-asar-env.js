@@ -299,6 +299,9 @@ const rendererPatchStats = {
   region: 0,
   legacyIsEnglish: 0,
   codeIsEnglish: 0,
+  loginIsEnglish: 0,
+  apiBaseUrl: 0,
+  apiFallbackBaseUrl: 0,
 };
 
 function patchChinaRendererSource(entry) {
@@ -317,6 +320,34 @@ function patchChinaRendererSource(entry) {
   source = result.source;
   rendererPatchStats.codeIsEnglish += result.count;
 
+  // The login HTML loads a second shared environment chunk.  Its `a1`
+  // export is the isEnglish flag used by the user-bootstrap API fallback.
+  result = replaceAllWithCount(
+    source,
+    'c=!0,d=!0,u=!1,p={MODE:"production",REGION:"zh",VITE_PLATFORM:"electron",VITE_DEPLOY_MODE:"self-host",VITE_DOWNLOAD_SOURCE:"",VITE_IS_INSIDE:""}.__MAVIS_VERSION__,m=!1',
+    'c=!0,d=!1,u=!1,p={MODE:"production",REGION:"zh",VITE_PLATFORM:"electron",VITE_DEPLOY_MODE:"self-host",VITE_DOWNLOAD_SOURCE:"",VITE_IS_INSIDE:""}.__MAVIS_VERSION__,m=!1',
+  );
+  source = result.source;
+  rendererPatchStats.loginIsEnglish += result.count;
+
+  // The modern renderer's user bootstrap client is a separate bundle. Its
+  // explicit base URL bypasses the main-process China domain configuration.
+  result = replaceAllWithCount(
+    source,
+    'baseURL:o.d&&!o.r8?"https://agent.minimax.io":void 0',
+    'baseURL:o.d&&!o.r8?"https://agent.minimaxi.com":void 0',
+  );
+  source = result.source;
+  rendererPatchStats.apiBaseUrl += result.count;
+
+  result = replaceAllWithCount(
+    source,
+    'let a=e.baseURL||"https://agent.minimax.io"',
+    'let a=e.baseURL||"https://agent.minimaxi.com"',
+  );
+  source = result.source;
+  rendererPatchStats.apiFallbackBaseUrl += result.count;
+
   return Buffer.from(source, 'utf8');
 }
 
@@ -333,7 +364,10 @@ const chinaRendererEntries = findArchiveEntries((entryPath, entry) =>
   entryPath.endsWith('.js') && (
     entry.includes('REGION:"en"') ||
     entry.includes('u=!0,S=!1,d={MODE:"production"') ||
-    entry.includes('d=!0,h=!1,g="__MX_INIT_STORE__"')
+    entry.includes('d=!0,h=!1,g="__MX_INIT_STORE__"') ||
+    entry.includes('c=!0,d=!0,u=!1,p={MODE:"production",REGION:"zh",VITE_PLATFORM:"electron",VITE_DEPLOY_MODE:"self-host",VITE_DOWNLOAD_SOURCE:"",VITE_IS_INSIDE:""}.__MAVIS_VERSION__,m=!1') ||
+    entry.includes('baseURL:o.d&&!o.r8?"https://agent.minimax.io":void 0') ||
+    entry.includes('let a=e.baseURL||"https://agent.minimax.io"')
   ),
 );
 
@@ -348,7 +382,10 @@ for (const entryPath of chinaRendererEntries) {
 if (
   rendererPatchStats.region === 0 ||
   rendererPatchStats.legacyIsEnglish === 0 ||
-  rendererPatchStats.codeIsEnglish === 0
+  rendererPatchStats.codeIsEnglish === 0 ||
+  rendererPatchStats.loginIsEnglish === 0 ||
+  rendererPatchStats.apiBaseUrl === 0 ||
+  rendererPatchStats.apiFallbackBaseUrl === 0
 ) {
   throw new Error('unable to apply the China renderer login patch');
 }
