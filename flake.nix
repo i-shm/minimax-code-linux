@@ -41,6 +41,10 @@
           inherit minimax-agent;
         };
 
+        china-renderer-login = pkgs.callPackage ./nix/china-renderer-login-check.nix {
+          inherit minimax-agent;
+        };
+
         domestic-deep-link-protocol = pkgs.callPackage ./nix/deep-link-protocol-check.nix {
           inherit minimax-agent;
         };

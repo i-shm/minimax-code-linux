@@ -117,6 +117,55 @@ function getEntryRecord(header, entryPath) {
   return entryPath.split('/').reduce((node, component) => node?.files?.[component], header);
 }
 
+function findArchiveEntries(predicate) {
+  const archiveStats = fs.statSync(archivePath);
+  const archiveFd = fs.openSync(archivePath, 'r');
+
+  try {
+    const prefix = readExactly(archiveFd, 16, 0);
+    const sizePicklePayloadSize = prefix.readUInt32LE(0);
+    const headerSize = prefix.readUInt32LE(4);
+    const headerPicklePayloadSize = prefix.readUInt32LE(8);
+    const headerJsonSize = prefix.readUInt32LE(12);
+
+    if (
+      sizePicklePayloadSize !== 4 ||
+      headerSize !== 4 + headerPicklePayloadSize ||
+      headerPicklePayloadSize !== 4 + align(headerJsonSize) ||
+      8 + headerSize > archiveStats.size
+    ) {
+      throw new Error('unsupported or malformed ASAR header');
+    }
+
+    const headerJson = readExactly(archiveFd, headerJsonSize, 16).toString('utf8');
+    const header = JSON.parse(headerJson);
+    const dataStart = 8 + headerSize;
+    const entries = [];
+
+    function visit(node, parentPath = '') {
+      for (const [name, child] of Object.entries(node.files ?? {})) {
+        const entryPath = parentPath ? `${parentPath}/${name}` : name;
+        if (typeof child.offset === 'string' && Number.isSafeInteger(child.size)) {
+          const offset = Number(BigInt(child.offset));
+          if (!Number.isSafeInteger(offset) || offset < 0 || dataStart + offset + child.size > archiveStats.size) {
+            throw new Error(`the ${entryPath} ASAR entry has invalid bounds`);
+          }
+          const entry = readExactly(archiveFd, child.size, dataStart + offset);
+          if (predicate(entryPath, entry)) {
+            entries.push(entryPath);
+          }
+        }
+        visit(child, entryPath);
+      }
+    }
+
+    visit(header);
+    return entries;
+  } finally {
+    fs.closeSync(archiveFd);
+  }
+}
+
 function rewriteArchiveEntry(entryPath, transform) {
   const archiveStats = fs.statSync(archivePath);
   const archiveFd = fs.openSync(archivePath, 'r');
@@ -238,6 +287,39 @@ function patchDeepLinkSource(entry) {
   return Buffer.from(source, 'utf8');
 }
 
+function replaceAllWithCount(source, expected, replacement) {
+  const count = source.split(expected).length - 1;
+  return {
+    count,
+    source: count === 0 ? source : source.split(expected).join(replacement),
+  };
+}
+
+const rendererPatchStats = {
+  region: 0,
+  legacyIsEnglish: 0,
+  codeIsEnglish: 0,
+};
+
+function patchChinaRendererSource(entry) {
+  let source = entry.toString('utf8');
+  let result = replaceAllWithCount(source, 'REGION:"en"', 'REGION:"zh"');
+  source = result.source;
+  rendererPatchStats.region += result.count;
+
+  // These flags are compiled from REGION rather than evaluated from
+  // .env.local at runtime. They select the international account endpoint.
+  result = replaceAllWithCount(source, 'u=!0,S=!1,d={MODE:"production"', 'u=!1,S=!1,d={MODE:"production"');
+  source = result.source;
+  rendererPatchStats.legacyIsEnglish += result.count;
+
+  result = replaceAllWithCount(source, 'd=!0,h=!1,g="__MX_INIT_STORE__"', 'd=!1,h=!1,g="__MX_INIT_STORE__"');
+  source = result.source;
+  rendererPatchStats.codeIsEnglish += result.count;
+
+  return Buffer.from(source, 'utf8');
+}
+
 rewriteArchiveEntry('.env.local', (oldEntry) => {
   if (!oldEntry.toString('utf8').includes('NEXT_PUBLIC_LOCALE=')) {
     throw new Error('the .env.local ASAR entry is not a MiniMax environment file');
@@ -246,3 +328,27 @@ rewriteArchiveEntry('.env.local', (oldEntry) => {
 });
 
 rewriteArchiveEntry('dist/main/modules/deeplink/index.js', patchDeepLinkSource);
+
+const chinaRendererEntries = findArchiveEntries((entryPath, entry) =>
+  entryPath.endsWith('.js') && (
+    entry.includes('REGION:"en"') ||
+    entry.includes('u=!0,S=!1,d={MODE:"production"') ||
+    entry.includes('d=!0,h=!1,g="__MX_INIT_STORE__"')
+  ),
+);
+
+if (chinaRendererEntries.length === 0) {
+  throw new Error('unable to find renderer entries with international login configuration');
+}
+
+for (const entryPath of chinaRendererEntries) {
+  rewriteArchiveEntry(entryPath, patchChinaRendererSource);
+}
+
+if (
+  rendererPatchStats.region === 0 ||
+  rendererPatchStats.legacyIsEnglish === 0 ||
+  rendererPatchStats.codeIsEnglish === 0
+) {
+  throw new Error('unable to apply the China renderer login patch');
+}
