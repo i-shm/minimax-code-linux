@@ -10,11 +10,11 @@
   dpkg,
   expat,
   fetchurl,
-  fetchzip,
   glib,
   gtk3,
   lib,
   libdrm,
+  libgbm,
   libnotify,
   libx11,
   libxcomposite,
@@ -33,11 +33,18 @@
   nspr,
   nss,
   pango,
+  patchelf,
+  runtimeShell,
+  stdenv,
   stdenvNoCC,
   udev,
+  unzip,
+  xdg-utils,
 }:
 
 let
+  electronVersion = "33.4.11";
+
   runtimeLibraries = [
     alsa-lib
     at-spi2-atk
@@ -49,6 +56,7 @@ let
     glib
     gtk3
     libdrm
+    libgbm
     libnotify
     libxkbcommon
     mesa
@@ -78,13 +86,10 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     hash = "sha256-c++oDD6iekD+YdLMa+p/oSvBoJw+DYMK4i8G4fDMddQ=";
   };
 
-  # Electron's published archive SHA-256 is
-  # fc9e2a5f969d0fcf7546eb3299a2450329ba4f05c1baa4f0ed7b269b45e2232b.
-  # fetchzip pins the extracted NAR, so its hash differs from the archive hash.
-  electron = fetchzip {
-    url = "https://github.com/electron/electron/releases/download/v33.2.0/electron-v33.2.0-linux-x64.zip";
-    hash = "sha256-YRsaRtG2SXaJcMlJbjW4PSsmTK8Jk324hGc2whlE4UE=";
-    stripRoot = false;
+  # The SHA-256 is from Electron's official v33.4.11 SHASUMS256.txt.
+  electron = fetchurl {
+    url = "https://github.com/electron/electron/releases/download/v${electronVersion}/electron-v${electronVersion}-linux-x64.zip";
+    hash = "sha256-IS1DHHyRYpIxHHl82R+ERnxavW5pg88ksWLv/2TO6Kk=";
   };
 
   dontUnpack = true;
@@ -94,6 +99,8 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     copyDesktopItems
     dpkg
     makeWrapper
+    patchelf
+    unzip
   ];
 
   buildInputs = runtimeLibraries;
@@ -108,6 +115,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
       categories = [ "Network" "Chat" ];
       mimeTypes = [
         "x-scheme-handler/minimax"
+        "x-scheme-handler/minimax-cn"
         "x-scheme-handler/minimax-agent"
       ];
     })
@@ -121,14 +129,29 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
     test -f deb/opt/minimax-agent/resources/app.asar
     test -d deb/opt/minimax-agent/resources/app.asar.unpacked
-    test -x "$electron/electron"
+    mkdir electron-runtime
+    unzip -q "$electron" -d electron-runtime
+
+    test -x electron-runtime/electron
 
     appDir="$out/lib/${finalAttrs.pname}"
-    cp -a "$electron"/. "$appDir"/
+    cp -a electron-runtime/. "$appDir"/
     chmod -R u+w "$appDir"
     rm -rf "$appDir/resources"
     mkdir -p "$appDir/resources"
     cp -a deb/opt/minimax-agent/resources/. "$appDir/resources/"
+
+    # The upstream Debian archive ships the international production settings
+    # in app.asar. The app loader gives this file precedence over the launcher
+    # environment, so rewrite that packed entry at build time. The rewriter
+    # keeps all other archive bytes and the existing native-module layout.
+    appAsar="$appDir/resources/app.asar"
+    patchelf --set-interpreter ${stdenv.cc.bintools.dynamicLinker} "$appDir/electron"
+    LD_LIBRARY_PATH="$appDir:${lib.makeLibraryPath runtimeLibraries}" \
+      ELECTRON_RUN_AS_NODE=1 \
+      "$appDir/electron" ${./rewrite-asar-env.js} "$appAsar" ${./minimax-agent.env.local}
+    test -f "$appAsar"
+    test -d "$appAsar.unpacked"
 
     if [ -d deb/usr/share/icons ]; then
       cp -a deb/usr/share/icons "$out/share/"
@@ -140,11 +163,27 @@ stdenvNoCC.mkDerivation (finalAttrs: {
       test ! -g "$appDir/chrome-sandbox"
     fi
 
+    browserOpenerDir="$out/libexec/${finalAttrs.pname}"
+    mkdir -p "$browserOpenerDir"
+    cat > "$browserOpenerDir/xdg-open" <<'EOF'
+#!${runtimeShell}
+unset LD_LIBRARY_PATH
+unset LD_PRELOAD
+exec ${xdg-utils}/bin/xdg-open "$@"
+EOF
+    chmod +x "$browserOpenerDir/xdg-open"
+
     makeWrapper "$appDir/electron" "$out/bin/minimax-agent" \
       --prefix LD_LIBRARY_PATH : "$appDir:${lib.makeLibraryPath runtimeLibraries}" \
+      --prefix PATH : "$browserOpenerDir" \
       --add-flags "--disable-gpu --disable-setuid-sandbox"
 
     runHook postInstall
+
+    desktopFile="$out/share/applications/minimax-agent.desktop"
+    test -f "$desktopFile"
+    substituteInPlace "$desktopFile" \
+      --replace-fail 'Exec=minimax-agent %U' "Exec=$out/bin/minimax-agent %U"
   '';
 
   meta = {

@@ -24,8 +24,30 @@
         meta.description = "Launch MiniMax Agent";
       };
 
-      checks.${system}.launcher-policy = pkgs.callPackage ./nix/launcher-policy-check.nix {
-        inherit minimax-agent;
+      checks.${system} = {
+        launcher-policy = pkgs.callPackage ./nix/launcher-policy-check.nix {
+          inherit minimax-agent;
+        };
+
+        electron-version = pkgs.callPackage ./nix/electron-version-check.nix {
+          inherit minimax-agent;
+        };
+
+        external-browser-environment = pkgs.callPackage ./nix/external-browser-environment-check.nix {
+          inherit minimax-agent;
+        };
+
+        china-locale = pkgs.callPackage ./nix/china-locale-check.nix {
+          inherit minimax-agent;
+        };
+
+        domestic-deep-link-protocol = pkgs.callPackage ./nix/deep-link-protocol-check.nix {
+          inherit minimax-agent;
+        };
+
+        deep-link-compatibility = pkgs.callPackage ./nix/deep-link-compatibility-check.nix {
+          inherit minimax-agent;
+        };
       };
     };
 }

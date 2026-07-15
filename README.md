@@ -1,17 +1,22 @@
-# MiniMax Agent for Linux
+# MiniMax Code China for Linux
 
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-Linux-blue" alt="Platform">
   <img src="https://img.shields.io/badge/Architecture-amd64-orange" alt="Architecture">
   <img src="https://img.shields.io/badge/Version-3.0.46-green" alt="Version">
   <img src="https://img.shields.io/badge/Package-deb-red" alt="Package">
+  <img src="https://img.shields.io/badge/Edition-China-red" alt="China edition">
 </p>
 
-> **Note**: This is an **unofficial port** of MiniMax Agent for Linux. MiniMax does not currently offer an official Linux desktop application. This project aims to bring the MiniMax Agent experience to Linux users.
+> **MiniMax Code China edition**: The maintained Nix package in this repository targets the China service (`minimaxi.com`), uses the Chinese locale, and signs in through the domestic MiniMax Code endpoints. It is not a client for the international `minimax.io` service.
+
+> **Note**: This is an **unofficial port** of MiniMax Code for Linux. MiniMax does not currently offer an official Linux desktop application. This project aims to bring the MiniMax Code China experience to Linux users.
 
 > **Fork status**: This fork maintains the Nix build support. Clone this repository and report issues here; the current `.deb` artifact remains published by the original port's release.
 
 ## Download .deb Package
+
+> The `.deb` artifact below is retained from the original port. Build with Nix for the MiniMax Code China configuration maintained by this fork.
 
 **Direct Download:** Download the `.deb` artifact from the original port's release:
 ```bash
@@ -37,9 +42,9 @@ sudo ./setup.sh
 minimax-agent
 ```
 
-## Nix (x86_64 Linux)
+## MiniMax Code China with Nix (x86_64 Linux)
 
-The flake provides an unprivileged, user-scoped package for x86_64 Linux. It treats the release `.deb` as application data and supplies a separately pinned Electron runtime; both downloaded inputs are fixed by hash in [`nix/minimax-agent.nix`](nix/minimax-agent.nix).
+The flake provides an unprivileged, user-scoped MiniMax Code China package for x86_64 Linux. It configures the application for the domestic `minimaxi.com` service and supplies a separately pinned Electron runtime; both downloaded inputs are fixed by hash in [`nix/minimax-agent.nix`](nix/minimax-agent.nix).
 
 Prerequisites:
 
@@ -169,7 +174,7 @@ This is an unofficial port. MiniMax is not affiliated with this project. The ori
 
 ## Links
 
-- [Official MiniMax Agent](https://agent.minimax.io)
+- [MiniMax Code China](https://agent.minimaxi.com)
 - [Report an Issue](https://github.com/i-shm/minimax-code-linux/issues)
 
 ---
