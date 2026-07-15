@@ -287,6 +287,71 @@ function patchDeepLinkSource(entry) {
   return Buffer.from(source, 'utf8');
 }
 
+function patchLinuxTraySource(entry) {
+  let source = entry.toString('utf8');
+  const oldMenuStart = [
+    '    return electron_1.Menu.buildFromTemplate([',
+    '        {',
+    "            label: isEnLanguage ? 'Mini Chat' : '打开小窗',",
+  ].join('\n');
+  const newMenuStart = [
+    '    return electron_1.Menu.buildFromTemplate([',
+    '        {',
+    "            label: isEnLanguage ? 'Show MiniMax Code' : '显示 MiniMax Code',",
+    '            click: () => {',
+    '                (0, window_1.bringToFront)();',
+    '            },',
+    '        },',
+    "        { type: 'separator' },",
+    '        {',
+    "            label: isEnLanguage ? 'Mini Chat' : '打开小窗',",
+  ].join('\n');
+  const oldBehavior = [
+    'function applyTrayBehavior(t) {',
+    "    t.removeAllListeners('click');",
+    "    t.removeAllListeners('right-click');",
+    "    t.removeAllListeners('double-click');",
+    "    // Don't use setContextMenu — it intercepts left-click on macOS",
+    '    t.setContextMenu(null);',
+    "    t.on('click', () => {",
+    '        (0, window_1.bringToFront)();',
+    '    });',
+    "    t.on('right-click', () => {",
+    '        t.popUpContextMenu(createContextMenu());',
+    '    });',
+    '}',
+  ].join('\n');
+  const newBehavior = [
+    'function applyTrayBehavior(t) {',
+    "    t.removeAllListeners('click');",
+    "    t.removeAllListeners('right-click');",
+    "    t.removeAllListeners('double-click');",
+    '    // Electron only exposes right-click tray events and popUpContextMenu',
+    '    // on macOS and Windows. Linux StatusNotifierItem trays need a menu',
+    '    // registered directly with the tray object.',
+    "    if (process.platform === 'linux') {",
+    '        t.setContextMenu(createContextMenu());',
+    "        t.on('click', () => {",
+    '            (0, window_1.bringToFront)();',
+    '        });',
+    '        return;',
+    '    }',
+    "    // Don't use setContextMenu — it intercepts left-click on macOS",
+    '    t.setContextMenu(null);',
+    "    t.on('click', () => {",
+    '        (0, window_1.bringToFront)();',
+    '    });',
+    "    t.on('right-click', () => {",
+    '        t.popUpContextMenu(createContextMenu());',
+    '    });',
+    '}',
+  ].join('\n');
+
+  source = replaceExactlyOnce(source, oldMenuStart, newMenuStart, 'primary tray menu entry');
+  source = replaceExactlyOnce(source, oldBehavior, newBehavior, 'Linux tray menu');
+  return Buffer.from(source, 'utf8');
+}
+
 function replaceAllWithCount(source, expected, replacement) {
   const count = source.split(expected).length - 1;
   return {
@@ -359,6 +424,7 @@ rewriteArchiveEntry('.env.local', (oldEntry) => {
 });
 
 rewriteArchiveEntry('dist/main/modules/deeplink/index.js', patchDeepLinkSource);
+rewriteArchiveEntry('dist/main/modules/tray/index.js', patchLinuxTraySource);
 
 const chinaRendererEntries = findArchiveEntries((entryPath, entry) =>
   entryPath.endsWith('.js') && (

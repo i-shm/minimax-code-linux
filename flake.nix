@@ -29,6 +29,18 @@
           inherit minimax-agent;
         };
 
+        input-method = pkgs.callPackage ./nix/input-method-check.nix {
+          inherit minimax-agent;
+        };
+
+        linux-tray = pkgs.callPackage ./nix/linux-tray-check.nix {
+          inherit minimax-agent;
+        };
+
+        desktop-integration = pkgs.callPackage ./nix/desktop-integration-check.nix {
+          inherit minimax-agent;
+        };
+
         electron-version = pkgs.callPackage ./nix/electron-version-check.nix {
           inherit minimax-agent;
         };

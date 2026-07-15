@@ -5,6 +5,7 @@
   autoPatchelfHook,
   cairo,
   copyDesktopItems,
+  coreutils,
   cups,
   dbus,
   dpkg,
@@ -97,6 +98,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   nativeBuildInputs = [
     autoPatchelfHook
     copyDesktopItems
+    coreutils
     dpkg
     makeWrapper
     patchelf
@@ -141,6 +143,26 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     mkdir -p "$appDir/resources"
     cp -a deb/opt/minimax-agent/resources/. "$appDir/resources/"
 
+    # The upstream ICO has a single 256px PNG image entry. Extract its
+    # payload into the standard XDG icon location used by Plasma launchers
+    # and task managers.
+    iconSource="$appDir/resources/resources/icon.ico"
+    iconDir="$out/share/icons/hicolor/256x256/apps"
+    test -f "$iconSource"
+    mkdir -p "$iconDir"
+    iconOffset="$(
+      ${coreutils}/bin/od -An -j 18 -N 4 -t u4 "$iconSource" \
+        | ${coreutils}/bin/tr -d '[:space:]'
+    )"
+    test -n "$iconOffset"
+    ${coreutils}/bin/dd if="$iconSource" of="$iconDir/minimax-agent.png" \
+      bs=1 skip="$iconOffset" status=none
+    test -s "$iconDir/minimax-agent.png"
+    test "$(
+      ${coreutils}/bin/od -An -N 8 -t x1 "$iconDir/minimax-agent.png" \
+        | ${coreutils}/bin/tr -d '[:space:]'
+    )" = '89504e470d0a1a0a'
+
     # The upstream Debian archive ships the international production settings
     # in app.asar. The app loader gives this file precedence over the launcher
     # environment, so rewrite that packed entry at build time. The rewriter
@@ -173,10 +195,40 @@ exec ${xdg-utils}/bin/xdg-open "$@"
 EOF
     chmod +x "$browserOpenerDir/xdg-open"
 
-    makeWrapper "$appDir/electron" "$out/bin/minimax-agent" \
+    cat > "$browserOpenerDir/launcher" <<'EOF'
+#!${runtimeShell}
+electron='@electron@'
+
+# Electron applications launched through a desktop entry do not necessarily
+# inherit the graphical session's input-method variables.  Default to Fcitx5
+# only when its control utility is available, and never override an explicit
+# choice from the user or their desktop environment.
+if command -v fcitx5-remote >/dev/null 2>&1; then
+  export GTK_IM_MODULE="''${GTK_IM_MODULE:-fcitx}"
+  export QT_IM_MODULE="''${QT_IM_MODULE:-fcitx}"
+  export XMODIFIERS="''${XMODIFIERS:-@im=fcitx}"
+fi
+
+# Electron 33 defaults to Wayland text-input-v1, while recent KDE Plasma
+# sessions expose text-input-v3.  Select the native Wayland backend and v3
+# explicitly when a Wayland display is available; X11 sessions stay unchanged.
+if [ -n "''${WAYLAND_DISPLAY:-}" ]; then
+  set -- \
+    --ozone-platform=wayland \
+    --enable-wayland-ime \
+    --wayland-text-input-version=3 \
+    "$@"
+fi
+
+exec "$electron" --disable-gpu --disable-setuid-sandbox "$@"
+EOF
+    substituteInPlace "$browserOpenerDir/launcher" \
+      --replace-fail '@electron@' "$appDir/electron"
+    chmod +x "$browserOpenerDir/launcher"
+
+    makeWrapper "$browserOpenerDir/launcher" "$out/bin/minimax-agent" \
       --prefix LD_LIBRARY_PATH : "$appDir:${lib.makeLibraryPath runtimeLibraries}" \
-      --prefix PATH : "$browserOpenerDir" \
-      --add-flags "--disable-gpu --disable-setuid-sandbox"
+      --prefix PATH : "$browserOpenerDir"
 
     runHook postInstall
 
